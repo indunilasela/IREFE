@@ -1,0 +1,94 @@
+/* Authentication Component Styles */
+
+/* Login/Register Form Container */
+.auth-form-container {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Form Input Enhancements */
+.auth-input {
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-input:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+/* Button Enhancements */
+.auth-btn {
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.auth-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+.auth-btn:active {
+  transform: translateY(0);
+}
+
+/* Logo/Icon Styling */
+.auth-logo {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Password Toggle Button */
+.password-toggle {
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #3b82f6;
+  transform: scale(1.1);
+}
+
+/* Form Validation Styling */
+.field-error {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Success Message */
+.success-message {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading State */
+.auth-loading {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(5px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .auth-form-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+}
