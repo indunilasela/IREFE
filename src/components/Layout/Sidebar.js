@@ -8,7 +8,9 @@ import {
   Calendar,
   BarChart3,
   Settings,
-  UserPlus
+  UserPlus,
+  Navigation,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -47,9 +49,21 @@ const Sidebar = () => {
       roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
     },
     {
+      name: 'Canals',
+      href: '/canals',
+      icon: Navigation,
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+    },
+    {
       name: 'Schedules',
       href: '/schedules',
       icon: Calendar,
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+    },
+    {
+      name: 'Notifications',
+      href: '/notifications',
+      icon: Bell,
       roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
     },
     {
