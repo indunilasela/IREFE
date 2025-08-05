@@ -30,96 +30,16 @@ const NotificationCenter = () => {
 
   useEffect(() => {
     fetchNotifications();
-    
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      if (Math.random() > 0.95) { // 5% chance every second
-        addRandomNotification();
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const fetchNotifications = async () => {
     try {
-      // Mock data - replace with actual API call
-      const mockNotifications = [
-        {
-          id: 1,
-          type: 'water_schedule',
-          title: 'Water Release Schedule Updated',
-          message: 'Main Canal water release has been rescheduled to 6:00 AM tomorrow. Duration: 12 hours.',
-          sender: 'DIA Officer',
-          recipientRole: 'All',
-          priority: 'high',
-          status: 'unread',
-          timestamp: new Date().getTime() - 300000, // 5 minutes ago
-          actionRequired: true,
-          relatedData: { scheduleId: 1, canal: 'Main Canal' }
-        },
-        {
-          id: 2,
-          type: 'system_alert',
-          title: 'Tank Level Critical',
-          message: 'Tank A water level has dropped below 20%. Immediate attention required.',
-          sender: 'System Alert',
-          recipientRole: 'EA',
-          priority: 'critical',
-          status: 'unread',
-          timestamp: new Date().getTime() - 600000, // 10 minutes ago
-          actionRequired: true,
-          relatedData: { tankId: 'A', level: 18 }
-        },
-        {
-          id: 3,
-          type: 'maintenance',
-          title: 'Canal Maintenance Completed',
-          message: 'Branch Canal 1 maintenance has been completed successfully. Canal is now operational.',
-          sender: 'EA Officer',
-          recipientRole: 'All',
-          priority: 'normal',
-          status: 'read',
-          timestamp: new Date().getTime() - 3600000, // 1 hour ago
-          actionRequired: false,
-          relatedData: { canalId: 'branch_1' }
-        },
-        {
-          id: 4,
-          type: 'user_message',
-          title: 'Farmer Request',
-          message: 'Request for extended water supply for Zone B paddy fields due to delayed transplanting.',
-          sender: 'Farmer John Doe',
-          recipientRole: 'DA',
-          priority: 'normal',
-          status: 'unread',
-          timestamp: new Date().getTime() - 7200000, // 2 hours ago
-          actionRequired: true,
-          relatedData: { farmerId: 123, zone: 'B' }
-        },
-        {
-          id: 5,
-          type: 'weather_alert',
-          title: 'Heavy Rain Warning',
-          message: 'IMD has issued heavy rain warning for next 48 hours. Review and adjust water release schedules.',
-          sender: 'Weather Service',
-          recipientRole: 'DIA',
-          priority: 'high',
-          status: 'read',
-          timestamp: new Date().getTime() - 10800000, // 3 hours ago
-          actionRequired: true,
-          relatedData: { validUntil: new Date().getTime() + 172800000 }
-        }
-      ];
-
-      // Filter notifications based on user role
-      const filteredNotifications = mockNotifications.filter(notification => 
-        notification.recipientRole === 'All' || 
-        notification.recipientRole === user?.role ||
-        (isAdmin && ['DIA', 'DA', 'EA'].includes(notification.recipientRole))
-      );
-
-      setNotifications(filteredNotifications);
+      // Replace with actual API call
+      // const response = await fetch('/api/notifications');
+      // const data = await response.json();
+      // setNotifications(data);
+      
+      setNotifications([]);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
       toast.error('Failed to load notifications');
@@ -128,64 +48,49 @@ const NotificationCenter = () => {
     }
   };
 
-  const addRandomNotification = () => {
-    const randomNotifications = [
-      {
-        type: 'water_flow',
-        title: 'Flow Rate Update',
-        message: 'Main Canal flow rate adjusted to 150 m³/s based on current demand.',
-        sender: 'System',
-        priority: 'normal'
-      },
-      {
-        type: 'sluice_gate',
-        title: 'Sluice Gate Status',
-        message: 'Branch Canal 2 sluice gate opened for regular water distribution.',
-        sender: 'EA Officer',
-        priority: 'normal'
-      },
-      {
-        type: 'tank_refill',
-        title: 'Tank Refilled',
-        message: 'Tank B has been refilled to 85% capacity.',
-        sender: 'System',
-        priority: 'low'
-      }
-    ];
-
-    const randomNotification = randomNotifications[Math.floor(Math.random() * randomNotifications.length)];
-    const newNotification = {
-      id: Date.now(),
-      ...randomNotification,
-      recipientRole: 'All',
-      status: 'unread',
-      timestamp: new Date().getTime(),
-      actionRequired: false,
-      relatedData: {}
-    };
-
-    setNotifications(prev => [newNotification, ...prev]);
+  const markAsRead = async (notificationId) => {
+    try {
+      // Replace with actual API call
+      // await fetch(`/api/notifications/${notificationId}/read`, { method: 'PATCH' });
+      
+      setNotifications(notifications.map(notification =>
+        notification.id === notificationId
+          ? { ...notification, status: 'read' }
+          : notification
+      ));
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+      toast.error('Failed to mark notification as read');
+    }
   };
 
-  const markAsRead = (notificationId) => {
-    setNotifications(notifications.map(notification =>
-      notification.id === notificationId
-        ? { ...notification, status: 'read' }
-        : notification
-    ));
+  const markAllAsRead = async () => {
+    try {
+      // Replace with actual API call
+      // await fetch('/api/notifications/read-all', { method: 'PATCH' });
+      
+      setNotifications(notifications.map(notification => ({
+        ...notification,
+        status: 'read'
+      })));
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+      toast.error('Failed to mark all notifications as read');
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notification => ({
-      ...notification,
-      status: 'read'
-    })));
-    toast.success('All notifications marked as read');
-  };
-
-  const deleteNotification = (notificationId) => {
-    setNotifications(notifications.filter(notification => notification.id !== notificationId));
-    toast.success('Notification deleted');
+  const deleteNotification = async (notificationId) => {
+    try {
+      // Replace with actual API call
+      // await fetch(`/api/notifications/${notificationId}`, { method: 'DELETE' });
+      
+      setNotifications(notifications.filter(notification => notification.id !== notificationId));
+      toast.success('Notification deleted');
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      toast.error('Failed to delete notification');
+    }
   };
 
   const sendNotification = async (notificationData) => {
@@ -195,6 +100,14 @@ const NotificationCenter = () => {
     }
 
     try {
+      // Replace with actual API call
+      // const response = await fetch('/api/notifications', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(notificationData)
+      // });
+      // const newNotification = await response.json();
+
       const newNotification = {
         id: Date.now(),
         type: 'user_message',
@@ -392,7 +305,12 @@ const NotificationCenter = () => {
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications found</h3>
-            <p className="text-gray-600">You're all caught up! No notifications match your current filters.</p>
+            <p className="text-gray-600">
+              {notifications.length === 0 
+                ? "You have no notifications at the moment." 
+                : "No notifications match your current filters."
+              }
+            </p>
           </div>
         ) : (
           filteredNotifications.map((notification) => (

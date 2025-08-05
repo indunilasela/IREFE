@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { 
   Droplets, 
   Plus, 
@@ -7,10 +6,17 @@ import {
   Calendar, 
   MapPin, 
   AlertTriangle, 
-  Save,
-  Upload
+  Save
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+
+// Mock auth context for demonstration
+const useAuth = () => ({
+  user: {
+    firstName: 'John',
+    role: 'EA', // Change this to test different roles: 'EA', 'DIA', 'DA', 'Admin', 'Farmer', 'FA', 'Irrigator'
+    isFirstLogin: false
+  }
+});
 
 const TankManagement = () => {
   const { user } = useAuth();
@@ -66,7 +72,7 @@ const TankManagement = () => {
       setTanks(transformedTanks);
     } catch (error) {
       console.error('Failed to fetch tanks:', error);
-      toast.error('Failed to load tank data');
+      alert('Failed to load tank data');
       
       // Fallback to empty array if API fails
       setTanks([]);
@@ -77,12 +83,12 @@ const TankManagement = () => {
 
   const handleUpdateTank = async (tankId, updates) => {
     if (!canEdit) {
-      toast.error('You do not have permission to edit tank data');
+      alert('You do not have permission to edit tank data');
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}`, {
+      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}/water-level`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -90,9 +96,7 @@ const TankManagement = () => {
         },
         body: JSON.stringify({
           currentWaterLevel: updates.currentLevel,
-          capacity: updates.capacity,
-          openingDate: updates.openingDate ? new Date(updates.openingDate).toISOString() : null,
-          closingDate: updates.closingDate ? new Date(updates.closingDate).toISOString() : null
+          capacity: updates.capacity
         })
       });
 
@@ -100,27 +104,42 @@ const TankManagement = () => {
         throw new Error('Failed to update tank');
       }
 
-      // Update local state
-      setTanks(tanks.map(tank => 
-        tank.id === tankId 
-          ? { ...tank, ...updates, lastUpdated: new Date().toISOString() }
-          : tank
-      ));
+      const data = await response.json();
       
-      toast.success('Tank updated successfully');
+      // Update local state with the response data
+      setTanks(prevTanks => 
+        prevTanks.map(tank => 
+          tank.id === tankId 
+            ? { 
+                ...tank, 
+                currentLevel: data.tank?.currentWaterLevel || updates.currentLevel,
+                capacity: data.tank?.capacity || updates.capacity,
+                waterLevelPercentage: data.tank?.waterLevelPercentage || Math.round((updates.currentLevel / updates.capacity) * 100),
+                lastUpdated: new Date().toISOString(),
+                lastUpdatedBy: {
+                  firstName: user.firstName,
+                  lastName: "User",
+                  role: user.role
+                }
+              }
+            : tank
+        )
+      );
+      
       setEditingTank(null);
+      alert('Tank updated successfully');
       
       // Send notification to other users
       console.log('Notification sent: Tank data updated by', user?.role);
     } catch (error) {
       console.error('Failed to update tank:', error);
-      toast.error('Failed to update tank');
+      alert('Failed to update tank');
     }
   };
 
   const handleAddTank = async (tankData) => {
     if (!canAddTanks) {
-      toast.error('Only EA users can add new tanks');
+      alert('Only EA users can add new tanks');
       return;
     }
 
@@ -161,15 +180,16 @@ const TankManagement = () => {
         closingDate: data.tank.closingDate,
         location: data.tank.location,
         status: 'Active',
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        waterLevelPercentage: Math.round((data.tank.currentWaterLevel / data.tank.capacity) * 100)
       };
       
       setTanks([...tanks, newTank]);
-      toast.success('Tank added successfully');
+      alert('Tank added successfully');
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add tank:', error);
-      toast.error('Failed to add tank');
+      alert('Failed to add tank');
     }
   };
 
@@ -177,6 +197,7 @@ const TankManagement = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Loading tanks...</span>
       </div>
     );
   }
@@ -205,16 +226,23 @@ const TankManagement = () => {
 
       {/* Tanks Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tanks.map((tank) => (
-          <TankCard
-            key={tank.id}
-            tank={tank}
-            canEdit={canEdit}
-            onEdit={setEditingTank}
-            onUpdate={handleUpdateTank}
-            isEditing={editingTank?.id === tank.id}
-          />
-        ))}
+        {tanks.length > 0 ? (
+          tanks.map((tank) => (
+            <TankCard
+              key={tank.id}
+              tank={tank}
+              canEdit={canEdit}
+              onEdit={setEditingTank}
+              onUpdate={handleUpdateTank}
+              isEditing={editingTank?.id === tank.id}
+            />
+          ))
+        ) : (
+          <div className="col-span-full bg-white rounded-lg shadow p-12 text-center">
+            <p className="text-gray-500 text-lg">No tanks found</p>
+            <p className="text-gray-400 text-sm mt-2">Check your connection or contact support</p>
+          </div>
+        )}
       </div>
 
       {/* Add Tank Modal */}
