@@ -19,6 +19,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import WaterManagement from './components/WaterManagement/WaterManagement';
 import TankManagement from './components/WaterManagement/TankManagement';
 import CanalManagement from './components/WaterManagement/CanalManagement';
+import PaddyFieldManagement from './components/WaterManagement/PaddyFieldManagement';
 import ScheduleManagement from './components/WaterManagement/ScheduleManagement';
 import NotificationCenter from './components/WaterManagement/NotificationCenter';
 import './styles/globals.css';
@@ -79,6 +80,14 @@ function App() {
              <ProtectedRoute>
                <Layout>
                  <CanalManagement />
+               </Layout>
+             </ProtectedRoute>
+           } />
+           
+           <Route path="/paddy-fields" element={
+             <ProtectedRoute>
+               <Layout>
+                 <PaddyFieldManagement />
                </Layout>
              </ProtectedRoute>
            } />

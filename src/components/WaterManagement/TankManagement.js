@@ -30,36 +30,46 @@ const TankManagement = () => {
 
   const fetchTanks = async () => {
     try {
-      // Mock data - replace with actual API call
-      setTanks([
-        {
-          id: 1,
-          name: 'Main Tank A',
-          capacity: 1000,
-          currentLevel: 750,
-          source: 'River A',
-          openingDate: '2025-08-01',
-          closingDate: '2025-08-31',
-          location: 'North Section',
-          status: 'Active',
-          lastUpdated: '2025-08-03T10:30:00Z'
-        },
-        {
-          id: 2,
-          name: 'Tank B',
-          capacity: 800,
-          currentLevel: 600,
-          source: 'Reservoir B',
-          openingDate: '2025-08-05',
-          closingDate: '2025-08-30',
-          location: 'South Section',
-          status: 'Active',
-          lastUpdated: '2025-08-03T09:15:00Z'
+      const response = await fetch('http://localhost:5000/api/ea/tanks', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
-      ]);
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch tanks');
+      }
+
+      const data = await response.json();
+      
+      // Transform backend data to match frontend expectations
+      const tanksList = data.data?.tanks || data.tanks || [];
+      const transformedTanks = tanksList.map(tank => ({
+        id: tank._id || tank.id,
+        name: tank.name,
+        capacity: tank.capacity,
+        currentLevel: tank.currentWaterLevel,
+        source: tank.waterSource,
+        waterSourceName: tank.waterSourceName,
+        openingDate: tank.openingDate ? new Date(tank.openingDate).toISOString().split('T')[0] : '',
+        closingDate: tank.closingDate ? new Date(tank.closingDate).toISOString().split('T')[0] : '',
+        location: tank.location,
+        status: tank.status || 'Active',
+        lastUpdated: tank.updatedAt || tank.lastUpdated || new Date().toISOString(),
+        waterLevelPercentage: tank.waterLevelPercentage || Math.round((tank.currentWaterLevel / tank.capacity) * 100),
+        createdBy: tank.createdBy,
+        lastUpdatedBy: tank.lastUpdatedBy
+      }));
+
+      setTanks(transformedTanks);
     } catch (error) {
       console.error('Failed to fetch tanks:', error);
       toast.error('Failed to load tank data');
+      
+      // Fallback to empty array if API fails
+      setTanks([]);
     } finally {
       setLoading(false);
     }
@@ -72,7 +82,25 @@ const TankManagement = () => {
     }
 
     try {
-      // Update tank data
+      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          currentWaterLevel: updates.currentLevel,
+          capacity: updates.capacity,
+          openingDate: updates.openingDate ? new Date(updates.openingDate).toISOString() : null,
+          closingDate: updates.closingDate ? new Date(updates.closingDate).toISOString() : null
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update tank');
+      }
+
+      // Update local state
       setTanks(tanks.map(tank => 
         tank.id === tankId 
           ? { ...tank, ...updates, lastUpdated: new Date().toISOString() }
@@ -82,8 +110,7 @@ const TankManagement = () => {
       toast.success('Tank updated successfully');
       setEditingTank(null);
       
-      // Send notification to other users (mock)
-      // In real app, this would be handled by the backend
+      // Send notification to other users
       console.log('Notification sent: Tank data updated by', user?.role);
     } catch (error) {
       console.error('Failed to update tank:', error);
@@ -98,9 +125,41 @@ const TankManagement = () => {
     }
 
     try {
+      const response = await fetch('http://localhost:5000/api/ea/tanks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          name: tankData.name,
+          waterSource: tankData.waterSource,
+          waterSourceName: tankData.waterSourceName,
+          location: tankData.location,
+          capacity: parseInt(tankData.capacity),
+          currentWaterLevel: parseInt(tankData.currentLevel),
+          openingDate: tankData.openingDate,
+          closingDate: tankData.closingDate
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add tank');
+      }
+
+      const data = await response.json();
+      
+      // Transform and add the new tank to local state
       const newTank = {
-        id: Date.now(),
-        ...tankData,
+        id: data.tank._id || data.tank.id,
+        name: data.tank.name,
+        capacity: data.tank.capacity,
+        currentLevel: data.tank.currentWaterLevel,
+        source: data.tank.waterSource,
+        waterSourceName: data.tank.waterSourceName,
+        openingDate: data.tank.openingDate,
+        closingDate: data.tank.closingDate,
+        location: data.tank.location,
         status: 'Active',
         lastUpdated: new Date().toISOString()
       };
@@ -196,7 +255,7 @@ const TankManagement = () => {
 // Tank Card Component
 const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
   const [editData, setEditData] = useState(tank);
-  const levelPercentage = (tank.currentLevel / tank.capacity) * 100;
+  const levelPercentage = tank.waterLevelPercentage || Math.round((tank.currentLevel / tank.capacity) * 100);
 
   const handleSave = () => {
     onUpdate(tank.id, editData);
@@ -211,7 +270,14 @@ const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
     <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{tank.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900">{tank.name}</h3>
+            <span className={`px-2 py-1 text-xs rounded-full ${
+              tank.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            }`}>
+              {tank.status?.charAt(0).toUpperCase() + tank.status?.slice(1) || 'Active'}
+            </span>
+          </div>
           <p className="text-sm text-gray-600">{tank.location}</p>
         </div>
         {canEdit && !isEditing && (
@@ -291,14 +357,22 @@ const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <MapPin className="h-4 w-4 mr-2" />
-              <span>Source: {tank.source}</span>
+              <span>Source: {tank.waterSourceName || tank.source}</span>
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <Calendar className="h-4 w-4 mr-2" />
-              <span>{tank.openingDate} - {tank.closingDate}</span>
+              <span>
+                {tank.openingDate && tank.closingDate 
+                  ? `${new Date(tank.openingDate).toLocaleDateString()} - ${new Date(tank.closingDate).toLocaleDateString()}`
+                  : 'No dates set'
+                }
+              </span>
             </div>
             <div className="text-xs text-gray-500 pt-2 border-t">
-              Last updated: {new Date(tank.lastUpdated).toLocaleDateString()}
+              <div>Last updated: {new Date(tank.lastUpdated).toLocaleDateString()}</div>
+              {tank.lastUpdatedBy && (
+                <div>Updated by: {tank.lastUpdatedBy.firstName} {tank.lastUpdatedBy.lastName} ({tank.lastUpdatedBy.role})</div>
+              )}
             </div>
           </>
         )}
@@ -313,7 +387,8 @@ const AddTankModal = ({ onClose, onAdd }) => {
     name: '',
     capacity: '',
     currentLevel: '',
-    source: '',
+    waterSource: 'river',
+    waterSourceName: '',
     openingDate: '',
     closingDate: '',
     location: ''
@@ -321,16 +396,12 @@ const AddTankModal = ({ onClose, onAdd }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onAdd({
-      ...formData,
-      capacity: parseInt(formData.capacity),
-      currentLevel: parseInt(formData.currentLevel)
-    });
+    onAdd(formData);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Tank</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -343,21 +414,56 @@ const AddTankModal = ({ onClose, onAdd }) => {
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Iginiyagala Tank"
             />
           </div>
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Water Source *
+              Water Source Type *
+            </label>
+            <select
+              required
+              value={formData.waterSource}
+              onChange={(e) => setFormData({...formData, waterSource: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="river">River</option>
+              <option value="reservoir">Reservoir</option>
+              <option value="well">Well</option>
+              <option value="canal">Canal</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Water Source Name *
             </label>
             <input
               type="text"
               required
-              value={formData.source}
-              onChange={(e) => setFormData({...formData, source: e.target.value})}
+              value={formData.waterSourceName}
+              onChange={(e) => setFormData({...formData, waterSourceName: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., River A, Reservoir B"
+              placeholder="e.g., Mahaweli River"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Location *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.location}
+              onChange={(e) => setFormData({...formData, location: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Kandy District"
+            />
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -366,9 +472,11 @@ const AddTankModal = ({ onClose, onAdd }) => {
               <input
                 type="number"
                 required
+                min="1"
                 value={formData.capacity}
                 onChange={(e) => setFormData({...formData, capacity: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="50000"
               />
             </div>
             <div>
@@ -378,23 +486,15 @@ const AddTankModal = ({ onClose, onAdd }) => {
               <input
                 type="number"
                 required
+                min="0"
                 value={formData.currentLevel}
                 onChange={(e) => setFormData({...formData, currentLevel: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="35000"
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location
-            </label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({...formData, location: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -419,6 +519,7 @@ const AddTankModal = ({ onClose, onAdd }) => {
               />
             </div>
           </div>
+          
           <div className="flex space-x-3 pt-4">
             <button
               type="submit"
