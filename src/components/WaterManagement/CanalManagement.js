@@ -1,117 +1,126 @@
+// components/CanalManagement.jsx - HIERARCHICAL TREE VERSION
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { 
-  Users, 
+  Folder as Tree, 
+  Plus, 
   Edit, 
-  Save, 
-  AlertTriangle, 
+  Calendar, 
+  Droplets, 
   Activity,
-  ArrowUp,
-  ArrowDown,
-  Circle,
-  Plus,
+  ChevronRight,
+  ChevronDown,
+  Settings,
+  MapPin,
+  Clock,
+  AlertCircle,
   RefreshCw,
+  Save,
+  X,
   Eye,
-  TrendingUp,
-  Droplets,
-  Settings
+  Database
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const CanalManagement = () => {
-  // Mock user context - replace with your actual auth context
-  const [user] = useState({ role: 'EA', id: '1' }); // Change role to test different permissions
-  
-  const [canals, setCanals] = useState([]);
-  const [tanks, setTanks] = useState([]);
+  const { user } = useAuth();
+  const [canalHierarchy, setCanalHierarchy] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingCanal, setEditingCanal] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedType, setSelectedType] = useState('');
-  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [expandedNodes, setExpandedNodes] = useState(new Set());
+  const [showMainCanalForm, setShowMainCanalForm] = useState(false);
+  const [showSubCanalForm, setShowSubCanalForm] = useState(false);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [selectedCanal, setSelectedCanal] = useState(null);
+  const [availableTanks, setAvailableTanks] = useState([]);
+  const [availableParents, setAvailableParents] = useState([]);
 
-  // API Base URL - adjust to match your backend
-  const API_BASE_URL = 'http://localhost:5000/api';
-
-  // Determine user permissions based on your role system
-  const canCreateCanals = ['EA'].includes(user?.role);
-  const canEditFlow = ['DIA', 'DA', 'EA', 'FA', 'Irrigator'].includes(user?.role);
-  const canEditSluice = ['DIA', 'DA', 'EA'].includes(user?.role);
-  const isReadOnly = ['Admin', 'Farmer'].includes(user?.role);
-
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
-  };
+ // CURRENT (Admin & Farmer are read-only):
+const canCreate = user?.role === 'EA';
+const canUpdate = ['DIA', 'DA', 'EA', 'FA', 'Irrigator', 'SA'].includes(user?.role);
+const isReadOnly = ['Admin', 'Farmer'].includes(user?.role);
 
   useEffect(() => {
-    fetchCanals();
-    fetchTanks();
+    fetchCanalHierarchy();
+    if (canCreate) {
+      fetchAvailableTanks();
+      fetchAvailableParents();
+    }
   }, []);
 
   const getAuthToken = () => {
-    // Replace with your actual token retrieval method
-    return localStorage.getItem('authToken') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
   };
 
-  const fetchCanals = async () => {
+  const fetchCanalHierarchy = async () => {
     try {
       setLoading(true);
       const token = getAuthToken();
-      
-      const response = await fetch(`${API_BASE_URL}/ea/canals`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch(`${API_BASE_URL}/ea/canals/hierarchy`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setCanals(data.data.canals || []);
-        console.log('Canals fetched successfully:', data.data.canals?.length);
+      if (response.ok) {
+        const data = await response.json();
+        setCanalHierarchy(data.data || []);
+        console.log('📊 Canal hierarchy loaded:', data.data?.length, 'tanks');
       } else {
-        throw new Error(data.error || 'Failed to fetch canals');
+        throw new Error('Failed to fetch canal hierarchy');
       }
     } catch (error) {
-      console.error('Failed to fetch canals:', error);
-      showToast(`Failed to load canal data: ${error.message}`, 'error');
+      console.error('Error fetching canal hierarchy:', error);
+      toast.error('Failed to load canal hierarchy');
       
-      // Fallback to mock data for demo purposes
-      setCanals([
+      // Mock data for demo/development
+      setCanalHierarchy([
         {
-          _id: '1',
-          name: 'Main Canal - Mahaweli Left Bank',
-          canalCode: 'MC-A1B2',
-          type: 'main',
-          currentFlowRate: 1500,
-          maxFlowCapacity: 2000,
-          status: 'active',
-          associatedTank: { name: 'Main Storage Tank', _id: 'tank1' },
-          startLocation: 'Main Tank Outlet',
-          endLocation: 'Distribution Point A',
-          flowUtilization: 75,
-          lastUpdatedBy: { firstName: 'John', lastName: 'Doe', role: 'EA' },
-          updatedAt: new Date().toISOString()
-        },
-        {
-          _id: '2', 
-          name: 'Branch Canal - North Section',
-          canalCode: 'BC-X3Y4',
-          type: 'branch',
-          currentFlowRate: 800,
-          maxFlowCapacity: 1200,
-          status: 'active',
-          associatedTank: { name: 'Main Storage Tank', _id: 'tank1' },
-          parentCanal: { name: 'Main Canal - Mahaweli Left Bank', _id: '1' },
-          startLocation: 'Main Canal Km 2.5',
-          endLocation: 'North Distribution Area',
-          flowUtilization: 67,
-          lastUpdatedBy: { firstName: 'Jane', lastName: 'Smith', role: 'DIA' },
-          updatedAt: new Date().toISOString()
+          id: 'tank1',
+          name: 'Main Storage Tank',
+          type: 'tank',
+          location: 'Kandy District',
+          capacity: 75000,
+          currentWaterLevel: 85,
+          children: [
+            {
+              id: 'main1',
+              name: 'Main Canal North',
+              code: 'MC-A1B2',
+              type: 'main',
+              startDay: new Date('2025-08-10'),
+              endDay: new Date('2025-08-20'),
+              canalStatus: 'open',
+              flowRate: 1500,
+              lastUpdateDay: new Date(),
+              children: [
+                {
+                  id: 'branch1',
+                  name: 'Branch Canal 1A',
+                  code: 'BC-C3D4',
+                  type: 'branch',
+                  startDay: new Date('2025-08-10'),
+                  endDay: new Date('2025-08-20'),
+                  canalStatus: 'close',
+                  flowRate: 0,
+                  lastUpdateDay: new Date(),
+                  children: [
+                    {
+                      id: 'branch2',
+                      name: 'Sub Branch 1A-1',
+                      code: 'BC-E5F6',
+                      type: 'branch',
+                      startDay: new Date('2025-08-12'),
+                      endDay: new Date('2025-08-18'),
+                      canalStatus: 'open',
+                      flowRate: 300,
+                      lastUpdateDay: new Date(),
+                      children: []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]);
     } finally {
@@ -119,154 +128,301 @@ const CanalManagement = () => {
     }
   };
 
-  const fetchTanks = async () => {
+  const fetchAvailableTanks = async () => {
     try {
       const token = getAuthToken();
-      
-      const response = await fetch(`${API_BASE_URL}/ea/tanks`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch(`${API_BASE_URL}/ea/canals/available-tanks`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setTanks(data.data.tanks || []);
-        }
+        setAvailableTanks(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch tanks:', error);
-      // Mock tank data for demo
-      setTanks([
-        { _id: 'tank1', name: 'Main Storage Tank', location: 'Kandy District' },
-        { _id: 'tank2', name: 'Secondary Tank', location: 'Matale District' }
+      console.error('Error fetching tanks:', error);
+      setAvailableTanks([
+        { _id: 'tank1', name: 'Main Storage Tank', location: 'Kandy District', currentWaterLevel: 85 }
       ]);
     }
   };
 
-  const handleUpdateFlow = async (canalId, newFlowRate, notes = '') => {
-    if (!canEditFlow) {
-      showToast('You do not have permission to edit canal flow data', 'error');
-      return;
-    }
-
+  const fetchAvailableParents = async () => {
     try {
       const token = getAuthToken();
-      
-      const response = await fetch(`${API_BASE_URL}/ea/canals/${canalId}/flow`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          currentFlowRate: newFlowRate,
-          notes: notes || 'Flow updated via web interface',
-          weather: 'sunny'
-        })
+      const response = await fetch(`${API_BASE_URL}/ea/canals/available-parents`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Update local state
-        setCanals(canals.map(canal => 
-          canal._id === canalId 
-            ? { 
-                ...canal, 
-                currentFlowRate: newFlowRate,
-                flowUtilization: Math.round((newFlowRate / canal.maxFlowCapacity) * 100),
-                lastUpdatedBy: { firstName: user.firstName, lastName: user.lastName, role: user.role },
-                updatedAt: new Date().toISOString()
-              }
-            : canal
-        ));
-        
-        showToast('Canal flow updated successfully! 🌊');
-        setEditingCanal(null);
-      } else {
-        throw new Error(data.error || 'Failed to update canal flow');
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableParents(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to update canal flow:', error);
-      showToast(`Failed to update canal flow: ${error.message}`, 'error');
+      console.error('Error fetching parent canals:', error);
     }
   };
 
-  const handleCreateCanal = async (canalData) => {
-    if (!canCreateCanals) {
-      showToast('You do not have permission to create canals', 'error');
-      return;
+  const toggleNode = (nodeId) => {
+    const newExpanded = new Set(expandedNodes);
+    if (newExpanded.has(nodeId)) {
+      newExpanded.delete(nodeId);
+    } else {
+      newExpanded.add(nodeId);
     }
+    setExpandedNodes(newExpanded);
+  };
 
+  const handleNodeClick = (node) => {
+    console.log('🖱️ Node clicked:', node.name, node.type);
+    
+    if (node.type === 'tank') {
+      // Tank clicked - expand/collapse
+      toggleNode(node.id);
+    } else {
+      // Canal clicked - can edit if authorized
+      if (canUpdate) {
+        console.log('✏️ Opening edit form for canal:', node.name);
+        setSelectedCanal(node);
+        setShowUpdateForm(true);
+      }
+      toggleNode(node.id);
+    }
+  };
+
+  const createMainCanal = async (formData) => {
     try {
       const token = getAuthToken();
+      console.log('🏗️ Creating main canal:', formData);
       
-      const response = await fetch(`${API_BASE_URL}/ea/canals`, {
+      const response = await fetch(`${API_BASE_URL}/ea/canals/main`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(canalData)
+        body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setCanals([data.data, ...canals]);
-        showToast('Canal created successfully! ✅');
-        setShowCreateForm(false);
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Main canal created successfully! 🚰');
+        console.log('✅ Main canal created:', result.data);
+        await fetchCanalHierarchy();
+        setShowMainCanalForm(false);
       } else {
-        throw new Error(data.error || 'Failed to create canal');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create main canal');
       }
     } catch (error) {
-      console.error('Failed to create canal:', error);
-      showToast(`Failed to create canal: ${error.message}`, 'error');
+      console.error('❌ Error creating main canal:', error);
+      toast.error(`Failed to create main canal: ${error.message}`);
     }
   };
 
-  const getStatusIcon = (status) => {
-    const isActive = status === 'active';
-    return isActive ? 
-      <Circle className="h-4 w-4 text-green-500 fill-current" /> :
-      <Circle className="h-4 w-4 text-red-500 fill-current" />;
+  const createSubCanal = async (formData) => {
+    try {
+      const token = getAuthToken();
+      console.log('🌊 Creating sub canal:', formData);
+      
+      const response = await fetch(`${API_BASE_URL}/ea/canals/sub`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Sub canal created successfully! 🌊');
+        console.log('✅ Sub canal created:', result.data);
+        await fetchCanalHierarchy();
+        setShowSubCanalForm(false);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create sub canal');
+      }
+    } catch (error) {
+      console.error('❌ Error creating sub canal:', error);
+      toast.error(`Failed to create sub canal: ${error.message}`);
+    }
   };
 
-  const getTypeColor = (type) => {
-    const colors = {
-      'main': 'bg-blue-100 text-blue-800',
-      'branch': 'bg-green-100 text-green-800',
-      'distributor': 'bg-yellow-100 text-yellow-800',
-      'field': 'bg-purple-100 text-purple-800'
-    };
-    return colors[type] || 'bg-gray-100 text-gray-800';
+  const updateCanal = async (canalId, formData) => {
+    try {
+      const token = getAuthToken();
+      console.log('🔄 Updating canal:', canalId, formData);
+      
+      const response = await fetch(`${API_BASE_URL}/ea/canals/${canalId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Canal updated successfully! ✅');
+        console.log('✅ Canal updated:', result.data);
+        await fetchCanalHierarchy();
+        setShowUpdateForm(false);
+        setSelectedCanal(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update canal');
+      }
+    } catch (error) {
+      console.error('❌ Error updating canal:', error);
+      toast.error(`Failed to update canal: ${error.message}`);
+    }
   };
 
-  const getFlowColor = (utilization) => {
-    if (utilization >= 90) return 'text-red-600';
-    if (utilization >= 70) return 'text-yellow-600';
-    return 'text-green-600';
-  };
+  const renderTreeNode = (node, level = 0) => {
+    const isExpanded = expandedNodes.has(node.id);
+    const hasChildren = node.children && node.children.length > 0;
+    const indent = level * 24;
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return (
+      <div key={node.id} className="select-none">
+        <div 
+          className={`flex items-center py-3 px-4 cursor-pointer hover:bg-gray-50 rounded-lg mb-1 transition-colors ${
+            node.type === 'tank' ? 'bg-blue-50 border border-blue-200' : 
+            node.type === 'main' ? 'bg-green-50 border border-green-200' : 
+            'bg-yellow-50 border border-yellow-200'
+          }`}
+          style={{ marginLeft: indent }}
+          onClick={() => handleNodeClick(node)}
+        >
+          {hasChildren && (
+            <div className="mr-3">
+              {isExpanded ? (
+                <ChevronDown className="h-5 w-5 text-gray-600" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-600" />
+              )}
+            </div>
+          )}
+          
+          <div className="flex items-center mr-4">
+            {node.type === 'tank' && <Database className="h-6 w-6 text-blue-600" />}
+            {node.type === 'main' && <Tree className="h-6 w-6 text-green-600" />}
+            {node.type === 'branch' && <Activity className="h-6 w-6 text-yellow-600" />}
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center space-x-3">
+              <span className="font-semibold text-gray-900">{node.name}</span>
+              
+              {node.code && (
+                <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full font-mono">
+                  {node.code}
+                </span>
+              )}
+              
+              {node.type !== 'tank' && (
+                <div className="flex items-center space-x-3 text-sm">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    node.canalStatus === 'open' 
+                      ? 'bg-green-100 text-green-800 border border-green-300' 
+                      : 'bg-red-100 text-red-800 border border-red-300'
+                  }`}>
+                    {node.canalStatus?.toUpperCase()}
+                  </span>
+                  
+                  <div className="flex items-center text-blue-600">
+                    <Droplets className="h-4 w-4 mr-1" />
+                    <span className="font-medium">{node.flowRate} L/s</span>
+                  </div>
+                  
+                  <div className="flex items-center text-gray-500">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>{new Date(node.lastUpdateDay).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              )}
+              
+              {node.type === 'tank' && (
+                <div className="flex items-center space-x-3 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    <span>{node.location}</span>
+                  </div>
+                  <div className="flex items-center text-blue-600">
+                    <Droplets className="h-4 w-4 mr-1" />
+                    <span className="font-medium">{node.currentWaterLevel}%</span>
+                  </div>
+                  <div className="text-gray-500">
+                    <span>Cap: {(node.capacity / 1000).toFixed(0)}K L</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {node.type !== 'tank' && (
+              <div className="text-xs text-gray-500 mt-1 flex items-center space-x-4">
+                <div className="flex items-center">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  <span>
+                    {new Date(node.startDay).toLocaleDateString()} → {new Date(node.endDay).toLocaleDateString()}
+                  </span>
+                </div>
+                {node.canalStatus === 'open' && (
+                  <div className="flex items-center text-green-600">
+                    <Activity className="h-3 w-3 mr-1" />
+                    <span>Active Flow</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {canUpdate && node.type !== 'tank' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('✏️ Edit button clicked for:', node.name);
+                setSelectedCanal(node);
+                setShowUpdateForm(true);
+              }}
+              className="ml-3 p-2 hover:bg-white hover:shadow-md rounded-lg transition-all duration-200"
+              title="Edit canal"
+            >
+              <Edit className="h-4 w-4 text-blue-500 hover:text-blue-700" />
+            </button>
+          )}
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('👁️ View details for:', node.name);
+            }}
+            className="ml-2 p-2 hover:bg-white hover:shadow-md rounded-lg transition-all duration-200"
+            title="View details"
+          >
+            <Eye className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+          </button>
+        </div>
+        
+        {isExpanded && hasChildren && (
+          <div className="mt-2 space-y-1">
+            {node.children.map(child => renderTreeNode(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading canal data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading canal network...</p>
+          <p className="text-gray-400 text-sm mt-2">Building hierarchy tree...</p>
         </div>
       </div>
     );
@@ -274,619 +430,754 @@ const CanalManagement = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      {/* Toast Notification */}
-      {toast.show && (
-        <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 max-w-md ${
-          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
-          <div className="flex items-center">
-            {toast.type === 'success' ? 
-              <Circle className="h-5 w-5 mr-2 fill-current" /> : 
-              <AlertTriangle className="h-5 w-5 mr-2" />
-            }
-            {toast.message}
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <Tree className="h-8 w-8 mr-3 text-green-600" />
+            Canal Management System
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Hierarchical canal network with real-time flow control and notifications
+          </p>
+          <div className="flex items-center mt-2 text-sm text-gray-500">
+            <Database className="h-4 w-4 mr-1" />
+            <span>Click any tank to expand → Click any canal to edit</span>
           </div>
         </div>
-      )}
-
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Canal Management</h1>
-            <p className="mt-2 text-gray-600">
-              Monitor and manage canal flow operations across the irrigation network
-              {isReadOnly && <span className="text-orange-600 font-medium"> (Read Only Access)</span>}
-            </p>
-          </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={fetchCanals}
-              className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </button>
-            {canCreateCanals && (
+        
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={fetchCanalHierarchy}
+            className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            title="Refresh hierarchy"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </button>
+          
+          {canCreate && (
+            <>
               <button
-                onClick={() => setShowCreateForm(true)}
+                onClick={() => {
+                  console.log('🏗️ Opening main canal form');
+                  setShowMainCanalForm(true);
+                }}
+                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Main Canal
+              </button>
+              
+              <button
+                onClick={() => {
+                  console.log('🌊 Opening sub canal form');
+                  setShowSubCanalForm(true);
+                }}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Canal
+                Create Sub Canal
               </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Canal Types Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {['main', 'branch', 'distributor', 'field'].map(type => {
-          const typeCanals = canals.filter(c => c.type === type);
-          const activeCanals = typeCanals.filter(c => c.status === 'active').length;
-          const totalFlow = typeCanals.reduce((sum, canal) => sum + (canal.currentFlowRate || 0), 0);
-          
-          return (
-            <div key={type} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 capitalize">{type} Canals</p>
-                  <p className="text-2xl font-bold text-gray-900">{typeCanals.length}</p>
-                </div>
-                <div className={`p-3 rounded-full ${getTypeColor(type)}`}>
-                  <Droplets className="h-6 w-6" />
-                </div>
-              </div>
-              <div className="flex justify-between text-sm">
-                <div>
-                  <p className="text-gray-600">Active</p>
-                  <p className="font-semibold text-green-600">{activeCanals}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Total Flow</p>
-                  <p className="font-semibold text-blue-600">{totalFlow.toLocaleString()} L/s</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Filter Controls */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-700">Filter by Type:</label>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Types</option>
-              <option value="main">Main</option>
-              <option value="branch">Branch</option>
-              <option value="distributor">Distributor</option>
-              <option value="field">Field</option>
-            </select>
-          </div>
-          <div className="text-sm text-gray-600">
-            Showing {canals.filter(c => !selectedType || c.type === selectedType).length} of {canals.length} canals
-          </div>
-        </div>
-      </div>
-
-      {/* Canals List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Canal Network Overview</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Canal Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Flow Rate
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Capacity
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Utilization
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Updated
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {canals
-                .filter(canal => !selectedType || canal.type === selectedType)
-                .map((canal) => (
-                <CanalRow
-                  key={canal._id}
-                  canal={canal}
-                  canEditFlow={canEditFlow}
-                  canEditSluice={canEditSluice}
-                  isEditing={editingCanal?._id === canal._id}
-                  onEdit={setEditingCanal}
-                  onUpdateFlow={handleUpdateFlow}
-                  getStatusIcon={getStatusIcon}
-                  getTypeColor={getTypeColor}
-                  getFlowColor={getFlowColor}
-                  formatDate={formatDate}
-                />
-              ))}
-            </tbody>
-          </table>
-          
-          {canals.filter(c => !selectedType || c.type === selectedType).length === 0 && (
-            <div className="text-center py-12">
-              <Droplets className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No canals found</p>
-              <p className="text-gray-400">
-                {canCreateCanals ? 'Create your first canal to get started' : 'No canals match your current filter'}
-              </p>
-            </div>
+            </>
           )}
         </div>
       </div>
 
-      {/* Permissions Notice */}
+      {/* Network Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Tanks</p>
+              <p className="text-2xl font-bold text-blue-600">{canalHierarchy.length}</p>
+            </div>
+            <Database className="h-8 w-8 text-blue-500" />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Main Canals</p>
+              <p className="text-2xl font-bold text-green-600">
+                {canalHierarchy.reduce((count, tank) => count + (tank.children?.length || 0), 0)}
+              </p>
+            </div>
+            <Tree className="h-8 w-8 text-green-500" />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Branch Canals</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {canalHierarchy.reduce((count, tank) => {
+                  return count + tank.children?.reduce((subCount, main) => 
+                    subCount + (main.children?.length || 0), 0) || 0;
+                }, 0)}
+              </p>
+            </div>
+            <Activity className="h-8 w-8 text-yellow-500" />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Canals</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {/* Calculate active canals from hierarchy */}
+                {(() => {
+                  const countActive = (nodes) => {
+                    let count = 0;
+                    nodes.forEach(node => {
+                      if (node.type !== 'tank' && node.canalStatus === 'open') count++;
+                      if (node.children) count += countActive(node.children);
+                    });
+                    return count;
+                  };
+                  return countActive(canalHierarchy);
+                })()}
+              </p>
+            </div>
+            <Settings className="h-8 w-8 text-purple-500" />
+          </div>
+        </div>
+      </div>
+
+      {/* Canal Hierarchy Tree */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <Tree className="h-5 w-5 mr-2 text-green-600" />
+            Canal Network Hierarchy
+          </h2>
+          
+          <div className="text-sm text-gray-500">
+            {expandedNodes.size > 0 ? `${expandedNodes.size} nodes expanded` : 'Click to expand nodes'}
+          </div>
+        </div>
+        
+        {canalHierarchy.length === 0 ? (
+          <div className="text-center py-16">
+            <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Canal Network Found</h3>
+            <p className="text-gray-600 mb-6">
+              {canCreate 
+                ? 'Create your first main canal to start building the irrigation network' 
+                : 'No canal network has been set up yet'
+              }
+            </p>
+            {canCreate && (
+              <div className="flex justify-center space-x-3">
+                <button
+                  onClick={() => setShowMainCanalForm(true)}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Main Canal
+                </button>
+                <button
+                  onClick={() => setShowSubCanalForm(true)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Sub Canal
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {canalHierarchy.map(tank => renderTreeNode(tank))}
+          </div>
+        )}
+      </div>
+
+      {/* Navigation Legend */}
+      <div className="mt-6 bg-gray-50 rounded-lg p-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Navigation Guide:</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
+          <div className="flex items-center">
+            <Database className="h-5 w-5 text-blue-600 mr-2" />
+            <span>Water Tank</span>
+          </div>
+          <div className="flex items-center">
+            <Tree className="h-5 w-5 text-green-600 mr-2" />
+            <span>Main Canal</span>
+          </div>
+          <div className="flex items-center">
+            <Activity className="h-5 w-5 text-yellow-600 mr-2" />
+            <span>Branch Canal</span>
+          </div>
+          <div className="flex items-center">
+            <ChevronRight className="h-4 w-4 text-gray-500 mr-2" />
+            <span>Click to Expand</span>
+          </div>
+          <div className="flex items-center">
+            <Edit className="h-4 w-4 text-blue-500 mr-2" />
+            <span>Click to Edit</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-4 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
+            <span>Canal Open</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showMainCanalForm && (
+        <MainCanalForm
+          onClose={() => setShowMainCanalForm(false)}
+          onCreate={createMainCanal}
+          availableTanks={availableTanks}
+        />
+      )}
+
+      {showSubCanalForm && (
+        <SubCanalForm
+          onClose={() => setShowSubCanalForm(false)}
+          onCreate={createSubCanal}
+          availableParents={availableParents}
+        />
+      )}
+
+      {showUpdateForm && selectedCanal && (
+        <UpdateCanalForm
+          canal={selectedCanal}
+          onClose={() => {
+            setShowUpdateForm(false);
+            setSelectedCanal(null);
+          }}
+          onUpdate={updateCanal}
+        />
+      )}
+
+      {/* User Permissions Notice */}
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start">
-          <Settings className="h-5 w-5 text-blue-600 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
           <div className="ml-3">
-            <h4 className="text-sm font-medium text-blue-900">Your Permissions ({user?.role})</h4>
+            <h4 className="text-sm font-medium text-blue-900">Your Access Level: {user?.role}</h4>
             <div className="mt-2 text-sm text-blue-700">
-              {canCreateCanals && <p>✅ Create new canals and manage canal network structure</p>}
-              {['DIA', 'DA', 'EA'].includes(user?.role) && (
-                <p>✅ Update flow rates, sluice gate operations, and water scheduling</p>
+              {canCreate && (
+                <p>✅ You can create new main canals and sub canals, and update all canal operations.</p>
               )}
-              {['FA', 'Irrigator'].includes(user?.role) && (
-                <p>✅ Update canal flow rates and monitor water distribution</p>
+              {canUpdate && !canCreate && (
+                <p>✅ You can update canal schedules, flow rates, and operational status.</p>
               )}
-              {['Admin', 'Farmer'].includes(user?.role) && (
-                <p>👁️ View-only access to canal information and flow data</p>
+              {isReadOnly && (
+                <p>👁️ You have read-only access to view the canal network structure.</p>
               )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Create Canal Modal */}
-      {showCreateForm && (
-        <CreateCanalModal
-          tanks={tanks}
-          canals={canals}
-          onClose={() => setShowCreateForm(false)}
-          onCreate={handleCreateCanal}
-        />
-      )}
     </div>
   );
 };
 
-// Canal Row Component
-const CanalRow = ({ 
-  canal, 
-  canEditFlow, 
-  canEditSluice, 
-  isEditing, 
-  onEdit, 
-  onUpdateFlow, 
-  getStatusIcon, 
-  getTypeColor,
-  getFlowColor,
-  formatDate
-}) => {
-  const [editData, setEditData] = useState({ flowRate: canal.currentFlowRate, notes: '' });
+// ========================================
+// MODAL COMPONENTS
+// ========================================
 
-  const handleSave = () => {
-    onUpdateFlow(canal._id, editData.flowRate, editData.notes);
+// Main Canal Creation Form
+const MainCanalForm = ({ onClose, onCreate, availableTanks }) => {
+  const [formData, setFormData] = useState({
+    canalName: '',
+    tankName: '',
+    startDay: '',
+    endDay: '',
+    canal: 'close',
+    flowRate: 0
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    console.log('📝 Submitting main canal form:', formData);
+    try {
+      await onCreate(formData);
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  const handleCancel = () => {
-    setEditData({ flowRate: canal.currentFlowRate, notes: '' });
-    onEdit(null);
-  };
-
-  if (isEditing) {
-    return (
-      <tr className="bg-yellow-50 border-l-4 border-yellow-400">
-        <td className="px-6 py-4">
-          <div>
-            <div className="text-sm font-medium text-gray-900">{canal.name}</div>
-            <div className="text-xs text-gray-500">{canal.canalCode}</div>
-            <div className="text-xs text-gray-500">
-              {canal.associatedTank?.name} → {canal.endLocation}
-            </div>
-          </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(canal.type)}`}>
-            {canal.type}
-          </span>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            {getStatusIcon(canal.status)}
-            <span className="ml-2 text-sm text-gray-900 capitalize">{canal.status}</span>
-          </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          {canEditFlow ? (
-            <div className="space-y-2">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max={canal.maxFlowCapacity}
-                value={editData.flowRate}
-                onChange={(e) => setEditData({...editData, flowRate: parseFloat(e.target.value) || 0})}
-                className="w-24 text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="L/s"
-              />
-              <input
-                type="text"
-                value={editData.notes}
-                onChange={(e) => setEditData({...editData, notes: e.target.value})}
-                className="w-32 text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Notes (optional)"
-              />
-            </div>
-          ) : (
-            <span className="text-sm text-gray-900">{canal.currentFlowRate} L/s</span>
-          )}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          {canal.maxFlowCapacity} L/s
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <span className={`text-sm font-medium ${getFlowColor(canal.flowUtilization || 0)}`}>
-            {canal.flowUtilization || 0}%
-          </span>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-          {formatDate(canal.updatedAt)}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <div className="flex space-x-2">
-            <button
-              onClick={handleSave}
-              className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              <Save className="h-3 w-3 mr-1" />
-              Save
-            </button>
-            <button
-              onClick={handleCancel}
-              className="px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
 
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4">
-        <div>
-          <div className="text-sm font-medium text-gray-900">{canal.name}</div>
-          <div className="text-xs text-gray-500">{canal.canalCode}</div>
-          <div className="text-xs text-gray-500">
-            {canal.associatedTank?.name}
-            {canal.parentCanal && ` ← ${canal.parentCanal.name}`}
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(canal.type)}`}>
-          {canal.type}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          {getStatusIcon(canal.status)}
-          <span className="ml-2 text-sm text-gray-900 capitalize">{canal.status}</span>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <Activity className="h-4 w-4 mr-1 text-blue-500" />
-          <span className="text-sm font-medium text-gray-900">{canal.currentFlowRate} L/s</span>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {canal.maxFlowCapacity} L/s
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-            <div 
-              className={`h-2 rounded-full ${
-                (canal.flowUtilization || 0) >= 90 ? 'bg-red-500' :
-                (canal.flowUtilization || 0) >= 70 ? 'bg-yellow-500' : 'bg-green-500'
-              }`}
-              style={{ width: `${Math.min(canal.flowUtilization || 0, 100)}%` }}
-            ></div>
-          </div>
-          <span className={`text-sm font-medium ${getFlowColor(canal.flowUtilization || 0)}`}>
-            {canal.flowUtilization || 0}%
-          </span>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-xs text-gray-500">
-          {formatDate(canal.updatedAt)}
-          {canal.lastUpdatedBy && (
-            <div className="text-xs text-gray-400">
-              by {canal.lastUpdatedBy.firstName} {canal.lastUpdatedBy.lastName}
-            </div>
-          )}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex space-x-2">
-          {canEditFlow && (
-            <button
-              onClick={() => onEdit(canal)}
-              className="flex items-center px-2 py-1 text-blue-600 hover:text-blue-900 transition-colors"
-            >
-              <Edit className="h-3 w-3 mr-1" />
-              Edit Flow
-            </button>
-          )}
-          <button className="flex items-center px-2 py-1 text-gray-600 hover:text-gray-900 transition-colors">
-            <Eye className="h-3 w-3 mr-1" />
-            Details
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center">
+            <Tree className="h-5 w-5 mr-2 text-green-600" />
+            Create Main Canal
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
           </button>
         </div>
-      </td>
-    </tr>
-  );
-};
-
-// Create Canal Modal Component
-const CreateCanalModal = ({ tanks, canals, onClose, onCreate }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    type: 'main',
-    parentCanal: '',
-    associatedTank: '',
-    length: '',
-    width: '',
-    depth: '',
-    maxFlowCapacity: '',
-    startLocation: '',
-    endLocation: '',
-    operationalSeason: 'year_round'
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    const canalData = {
-      ...formData,
-      length: parseFloat(formData.length),
-      width: parseFloat(formData.width),
-      depth: parseFloat(formData.depth),
-      maxFlowCapacity: parseFloat(formData.maxFlowCapacity),
-      parentCanal: formData.type === 'main' ? null : formData.parentCanal
-    };
-
-    onCreate(canalData);
-  };
-
-  const getValidParentCanals = () => {
-    const validParentTypes = {
-      'branch': ['main'],
-      'distributor': ['main', 'branch'],
-      'field': ['branch', 'distributor']
-    };
-    
-    if (formData.type === 'main') return [];
-    
-    return canals.filter(canal => 
-      validParentTypes[formData.type]?.includes(canal.type)
-    );
-  };
-
-  return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto m-4">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Create New Canal</h3>
-        </div>
         
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Canal Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.canalName}
+              onChange={(e) => setFormData({...formData, canalName: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Enter canal name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Select Tank *
+            </label>
+            <select
+              required
+              value={formData.tankName}
+              onChange={(e) => setFormData({...formData, tankName: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="">Choose a tank...</option>
+              {availableTanks.map(tank => (
+                <option key={tank._id} value={tank.name}>
+                  {tank.name} - {tank.location} 
+                  {tank.currentWaterLevel && ` (${tank.currentWaterLevel}% full)`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Canal Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Day *
+              </label>
               <input
-                type="text"
+                type="date"
                 required
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Main Canal - Left Bank"
+                value={formData.startDay}
+                onChange={(e) => setFormData({...formData, startDay: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Canal Type *</label>
-              <select
-                required
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value, parentCanal: ''})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="main">Main Canal</option>
-                <option value="branch">Branch Canal</option>
-                <option value="distributor">Distributor Canal</option>
-                <option value="field">Field Canal</option>
-              </select>
-            </div>
-
-            {formData.type !== 'main' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Canal *</label>
-                <select
-                  required
-                  value={formData.parentCanal}
-                  onChange={(e) => setFormData({...formData, parentCanal: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Parent Canal</option>
-                  {getValidParentCanals().map(canal => (
-                    <option key={canal._id} value={canal._id}>
-                      {canal.name} ({canal.type})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Associated Tank *</label>
-              <select
-                required
-                value={formData.associatedTank}
-                onChange={(e) => setFormData({...formData, associatedTank: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Tank</option>
-                {tanks.map(tank => (
-                  <option key={tank._id} value={tank._id}>
-                    {tank.name} - {tank.location}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Length (meters) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End Day *
+              </label>
               <input
-                type="number"
+                type="date"
                 required
-                min="1"
-                step="0.1"
-                value={formData.length}
-                onChange={(e) => setFormData({...formData, length: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 5000"
+                value={formData.endDay}
+                onChange={(e) => setFormData({...formData, endDay: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Width (meters) *</label>
-              <input
-                type="number"
-                required
-                min="0.1"
-                step="0.1"
-                value={formData.width}
-                onChange={(e) => setFormData({...formData, width: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 8.0"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Depth (meters) *</label>
-              <input
-                type="number"
-                required
-                min="0.1"
-                step="0.1"
-                value={formData.depth}
-                onChange={(e) => setFormData({...formData, depth: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 2.5"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Flow Capacity (L/s) *</label>
-              <input
-                type="number"
-                required
-                min="1"
-                step="0.1"
-                value={formData.maxFlowCapacity}
-                onChange={(e) => setFormData({...formData, maxFlowCapacity: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 2000"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Location *</label>
-              <input
-                type="text"
-                required
-                value={formData.startLocation}
-                onChange={(e) => setFormData({...formData, startLocation: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Tank Outlet"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Location *</label>
-              <input
-                type="text"
-                required
-                value={formData.endLocation}
-                onChange={(e) => setFormData({...formData, endLocation: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Distribution Point A"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Operational Season</label>
-              <select
-                value={formData.operationalSeason}
-                onChange={(e) => setFormData({...formData, operationalSeason: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="year_round">Year Round</option>
-                <option value="maha_only">Maha Season Only</option>
-                <option value="yala_only">Yala Season Only</option>
-                <option value="seasonal">Seasonal</option>
-              </select>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Canal Status *
+              </label>
+              <select
+                value={formData.canal}
+                onChange={(e) => setFormData({...formData, canal: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="close">Close</option>
+                <option value="open">Open</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Flow Rate (L/s) *
+              </label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.flowRate}
+                onChange={(e) => setFormData({...formData, flowRate: Number(e.target.value)})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                'Create Main Canal'
+              )}
+            </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+              disabled={isLoading}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
             >
               Cancel
             </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Sub Canal Creation Form
+const SubCanalForm = ({ onClose, onCreate, availableParents }) => {
+  const [formData, setFormData] = useState({
+    canalName: '',
+    mainCanal: '',
+    startDay: '',
+    endDay: '',
+    canal: 'close',
+    flowRate: 0
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    console.log('📝 Submitting sub canal form:', formData);
+    try {
+      await onCreate(formData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center">
+            <Activity className="h-5 w-5 mr-2 text-yellow-600" />
+            Create Sub Canal (Branch)
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Canal Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.canalName}
+              onChange={(e) => setFormData({...formData, canalName: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter canal name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Parent Canal *
+            </label>
+            <select
+              required
+              value={formData.mainCanal}
+              onChange={(e) => setFormData({...formData, mainCanal: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Choose parent canal...</option>
+              {availableParents.map(canal => (
+                <option key={canal._id} value={canal._id}>
+                  {canal.canalName} ({canal.canalType}) - {canal.canalCode}
+                  {canal.associatedTank && ` - ${canal.associatedTank.name}`}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Sub canals can branch from main canals or other branches
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Day *
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.startDay}
+                onChange={(e) => setFormData({...formData, startDay: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End Day *
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.endDay}
+                onChange={(e) => setFormData({...formData, endDay: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Canal Status *
+              </label>
+              <select
+                value={formData.canal}
+                onChange={(e) => setFormData({...formData, canal: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="close">Close</option>
+                <option value="open">Open</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Flow Rate (L/s) *
+              </label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.flowRate}
+                onChange={(e) => setFormData({...formData, flowRate: Number(e.target.value)})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          
+          <div className="flex space-x-3 pt-4">
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              disabled={isLoading}
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center"
             >
-              Create Canal
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                'Create Sub Canal'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Canal Update Form
+const UpdateCanalForm = ({ canal, onClose, onUpdate }) => {
+  const [formData, setFormData] = useState({
+    startDay: canal.startDay?.split ? canal.startDay.split('T')[0] : new Date(canal.startDay).toISOString().split('T')[0],
+    endDay: canal.endDay?.split ? canal.endDay.split('T')[0] : new Date(canal.endDay).toISOString().split('T')[0],
+    canal: canal.canalStatus || 'close',
+    flowRate: canal.flowRate || 0
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    console.log('📝 Submitting canal update:', canal.id, formData);
+    try {
+      await onUpdate(canal.id, formData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getStatusChangeMessage = () => {
+    if (formData.canal !== canal.canalStatus) {
+      const action = formData.canal === 'open' ? 'opening' : 'closing';
+      return (
+        <div className={`mt-3 p-3 rounded-lg ${formData.canal === 'open' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          <p className="text-sm font-medium">
+            ⚠️ You are {action} this canal. This will send notifications to all operational staff.
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center">
+            <Edit className="h-5 w-5 mr-2 text-orange-600" />
+            Update Canal: {canal.name}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        
+        {/* Canal Info */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-600">Type:</p>
+              <p className="font-medium capitalize">{canal.type}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Code:</p>
+              <p className="font-medium font-mono">{canal.code}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Current Status:</p>
+              <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                canal.canalStatus === 'open' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {canal.canalStatus?.toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-gray-600">Last Updated:</p>
+              <p className="font-medium">{new Date(canal.lastUpdateDay).toLocaleDateString()}</p>
+            </div>
+          </div>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Day *
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.startDay}
+                onChange={(e) => setFormData({...formData, startDay: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End Day *
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.endDay}
+                onChange={(e) => setFormData({...formData, endDay: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Canal Status *
+              </label>
+              <select
+                value={formData.canal}
+                onChange={(e) => setFormData({...formData, canal: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="close">Close</option>
+                <option value="open">Open</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Flow Rate (L/s) *
+              </label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.flowRate}
+                onChange={(e) => setFormData({...formData, flowRate: Number(e.target.value)})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {getStatusChangeMessage()}
+          
+          <div className="flex space-x-3 pt-6 border-t">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Update Canal
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Cancel
             </button>
           </div>
         </form>
@@ -896,3 +1187,22 @@ const CreateCanalModal = ({ tanks, canals, onClose, onCreate }) => {
 };
 
 export default CanalManagement;
+
+// ========================================
+// USAGE EXAMPLE IN APP.JS
+// ========================================
+
+/*
+// Add this to your App.js routing:
+
+import CanalManagement from './components/CanalManagement';
+
+// In your routes:
+<Route path="/canals" element={<CanalManagement />} />
+
+// Add to your navigation menu:
+<Link to="/canals" className="nav-link">
+  <Tree className="h-5 w-5 mr-2" />
+  Canal Management
+</Link>
+*/

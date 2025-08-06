@@ -65,18 +65,6 @@ const Sidebar = () => {
       href: '/notifications',
       icon: Bell,
       roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
-    },
-    {
-      name: 'Reports',
-      href: '/reports',
-      icon: BarChart3,
-      roles: ['Admin', 'DIA', 'DA', 'EA']
-    },
-    {
-      name: 'Settings',
-      href: '/settings',
-      icon: Settings,
-      roles: ['Admin']
     }
   ];
 

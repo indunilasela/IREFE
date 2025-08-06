@@ -31,7 +31,6 @@ const WaterManagement = () => {
   const [waterData, setWaterData] = useState({
     tanks: [],
     canals: [],
-    paddyFields: [],
     schedules: [],
     notifications: []
   });
@@ -46,7 +45,6 @@ const WaterManagement = () => {
   // Determine if user can edit data
   const canEdit = ['DIA', 'DA', 'EA', 'FA', 'Irrigator'].includes(user?.role);
   const canCreateTanks = ['EA'].includes(user?.role);
-  const canCreateFields = ['EA'].includes(user?.role);
   const isReadOnly = ['Farmer', 'Admin'].includes(user?.role);
 
   const showToast = (message, type = 'success') => {
@@ -68,7 +66,6 @@ const WaterManagement = () => {
     await Promise.all([
       fetchTanks(),
       fetchCanals(),
-      fetchPaddyFields(),
       fetchSchedules(),
       fetchNotifications()
     ]);
@@ -104,25 +101,13 @@ const WaterManagement = () => {
           
           setWaterData(prev => ({ ...prev, tanks: transformedTanks }));
         }
+      } else {
+        console.error('Failed to fetch tanks:', response.statusText);
+        showToast('Failed to load tank data', 'error');
       }
     } catch (error) {
       console.error('Failed to fetch tanks:', error);
-      // Mock fallback data
-      setWaterData(prev => ({
-        ...prev,
-        tanks: [
-          { 
-            id: '1', 
-            name: 'Main Storage Tank', 
-            capacity: 75000, 
-            currentLevel: 50000, 
-            source: 'Mahaweli River',
-            status: 'active',
-            waterLevelPercentage: 67,
-            location: 'Kandy District'
-          }
-        ]
-      }));
+      showToast('Failed to connect to server', 'error');
     }
   };
 
@@ -154,25 +139,21 @@ const WaterManagement = () => {
           
           setWaterData(prev => ({ ...prev, canals: transformedCanals }));
         }
+      } else {
+        console.error('Failed to fetch canals:', response.statusText);
+        showToast('Failed to load canal data', 'error');
       }
     } catch (error) {
       console.error('Failed to fetch canals:', error);
-      // Mock fallback data
-      setWaterData(prev => ({
-        ...prev,
-        canals: [
-          { id: '1', name: 'Main Canal', type: 'main', flow: 1500, status: 'active' },
-          { id: '2', name: 'Branch Canal 1', type: 'branch', flow: 800, status: 'active' }
-        ]
-      }));
+      showToast('Failed to connect to server', 'error');
     }
   };
 
-  // Fetch Paddy Fields
-  const fetchPaddyFields = async () => {
+  // Fetch Water Schedules
+  const fetchSchedules = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/ea/paddy-fields`, {
+      const response = await fetch(`${API_BASE_URL}/ea/water-schedules`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -182,68 +163,35 @@ const WaterManagement = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          const transformedFields = (data.data.paddyFields || []).map(field => ({
-            id: field._id,
-            name: field.name,
-            area: field.area,
-            areaUnit: field.areaUnit,
-            status: field.status,
-            soilType: field.soilType,
-            associatedTank: field.associatedTank
-          }));
-          
-          setWaterData(prev => ({ ...prev, paddyFields: transformedFields }));
+          setWaterData(prev => ({ ...prev, schedules: data.data.schedules || [] }));
         }
+      } else {
+        console.error('Failed to fetch schedules:', response.statusText);
       }
-    } catch (error) {
-      console.error('Failed to fetch paddy fields:', error);
-      // Mock fallback data
-      setWaterData(prev => ({
-        ...prev,
-        paddyFields: [
-          { id: '1', name: 'Paddy Field A1', area: 25.5, areaUnit: 'acres', status: 'active' }
-        ]
-      }));
-    }
-  };
-
-  // Fetch Water Schedules (placeholder for future implementation)
-  const fetchSchedules = async () => {
-    try {
-      // Future implementation: GET /api/ea/water-schedules
-      setWaterData(prev => ({
-        ...prev,
-        schedules: [
-          { id: '1', title: 'Morning Water Distribution', date: '2025-08-05', time: '06:00' },
-          { id: '2', title: 'Evening Canal Closure', date: '2025-08-05', time: '18:00' }
-        ]
-      }));
     } catch (error) {
       console.error('Failed to fetch schedules:', error);
     }
   };
 
-  // Fetch Notifications (placeholder for future implementation)
+  // Fetch Notifications
   const fetchNotifications = async () => {
     try {
-      // Future implementation: GET /api/notifications
-      setWaterData(prev => ({
-        ...prev,
-        notifications: [
-          { 
-            id: '1', 
-            message: 'Tank water level updated by EA John Doe', 
-            time: '2 hours ago', 
-            type: 'update' 
-          },
-          { 
-            id: '2', 
-            message: 'New canal created: Branch Canal North', 
-            time: '4 hours ago', 
-            type: 'update' 
-          }
-        ]
-      }));
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/notifications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setWaterData(prev => ({ ...prev, notifications: data.data.notifications || [] }));
+        }
+      } else {
+        console.error('Failed to fetch notifications:', response.statusText);
+      }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     }
@@ -338,41 +286,13 @@ const WaterManagement = () => {
           await fetchTanks(); // Refresh tanks list
           showToast('Tank created successfully! ✅');
         }
+      } else {
+        const errorData = await response.json();
+        showToast(`Failed to create tank: ${errorData.error || 'Unknown error'}`, 'error');
       }
     } catch (error) {
       console.error('Failed to create tank:', error);
       showToast(`Failed to create tank: ${error.message}`, 'error');
-    }
-  };
-
-  // Create New Paddy Field
-  const createPaddyField = async (fieldData) => {
-    if (!canCreateFields) {
-      showToast('You do not have permission to create paddy fields', 'error');
-      return;
-    }
-
-    try {
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/ea/paddy-fields`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(fieldData)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          await fetchPaddyFields(); // Refresh fields list
-          showToast('Paddy field created successfully! ✅');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to create paddy field:', error);
-      showToast(`Failed to create paddy field: ${error.message}`, 'error');
     }
   };
 
@@ -424,63 +344,8 @@ const WaterManagement = () => {
         </div>
       </div>
 
-      {/* Quick Stats Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center">
-            <Droplets className="h-8 w-8 text-blue-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Tanks</p>
-              <p className="text-2xl font-bold text-gray-900">{waterData.tanks.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center">
-            <Activity className="h-8 w-8 text-green-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Canals</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {waterData.canals.filter(c => c.status === 'active').length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center">
-            <Users className="h-8 w-8 text-purple-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Paddy Fields</p>
-              <p className="text-2xl font-bold text-gray-900">{waterData.paddyFields.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center">
-            <Calendar className="h-8 w-8 text-orange-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Schedules</p>
-              <p className="text-2xl font-bold text-gray-900">{waterData.schedules.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center">
-            <Bell className="h-8 w-8 text-red-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Notifications</p>
-              <p className="text-2xl font-bold text-gray-900">{waterData.notifications.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Quick Access Navigation Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Link
           to="/tanks"
           className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105"
@@ -508,19 +373,6 @@ const WaterManagement = () => {
         </Link>
 
         <Link
-          to="/paddy-fields"
-          className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow-lg hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105"
-        >
-          <div className="flex items-center">
-            <Users className="h-8 w-8 mr-4" />
-            <div>
-              <h3 className="text-xl font-bold">Paddy Fields</h3>
-              <p className="text-purple-100">Manage agricultural fields</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link
           to="/schedules"
           className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-lg shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
         >
@@ -534,118 +386,45 @@ const WaterManagement = () => {
         </Link>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Tank Status - Takes 2 columns */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">Tank Status Overview</h3>
-            <div className="flex items-center space-x-2">
-              {canEdit && (
-                <p className="text-xs text-gray-500">Click edit to update water levels</p>
-              )}
-              {canCreateTanks && (
-                <button className="flex items-center px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Tank
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {waterData.tanks.map((tank) => (
-              <TankStatusCard
-                key={tank.id}
-                tank={tank}
-                canEdit={canEdit}
-                isEditing={editingTank === tank.id}
-                onEdit={setEditingTank}
-                onUpdate={updateWaterLevel}
-                updating={updatingLevel}
-              />
-            ))}
-            {waterData.tanks.length === 0 && (
-              <div className="text-center py-8">
-                <Droplets className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No tanks available</p>
-                {canCreateTanks && (
-                  <button className="mt-2 text-blue-600 hover:text-blue-700">
-                    Create your first tank
-                  </button>
-                )}
-              </div>
+      {/* Main Content - Tank Status Only */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">Tank Status Overview</h3>
+          <div className="flex items-center space-x-2">
+            {canEdit && (
+              <p className="text-xs text-gray-500">Click edit to update water levels</p>
+            )}
+            {canCreateTanks && (
+              <button className="flex items-center px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                <Plus className="h-3 w-3 mr-1" />
+                Add Tank
+              </button>
             )}
           </div>
         </div>
-
-        {/* Side Panel - Recent Updates & Quick Stats */}
-        <div className="space-y-6">
-          {/* Canal Flow Summary */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Canal Flow Status</h3>
-            <div className="space-y-3">
-              {waterData.canals.slice(0, 4).map((canal) => (
-                <div key={canal.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{canal.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{canal.type} Canal</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-blue-600">{canal.flow} L/s</p>
-                    <div className={`w-2 h-2 rounded-full ${
-                      canal.status === 'active' ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
-                  </div>
-                </div>
-              ))}
-              {waterData.canals.length === 0 && (
-                <p className="text-gray-500 text-center py-4">No canals available</p>
+        <div className="space-y-4 max-h-96 overflow-y-auto">
+          {waterData.tanks.map((tank) => (
+            <TankStatusCard
+              key={tank.id}
+              tank={tank}
+              canEdit={canEdit}
+              isEditing={editingTank === tank.id}
+              onEdit={setEditingTank}
+              onUpdate={updateWaterLevel}
+              updating={updatingLevel}
+            />
+          ))}
+          {waterData.tanks.length === 0 && (
+            <div className="text-center py-8">
+              <Droplets className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No tanks available</p>
+              {canCreateTanks && (
+                <button className="mt-2 text-blue-600 hover:text-blue-700">
+                  Create your first tank
+                </button>
               )}
             </div>
-          </div>
-
-          {/* Recent Updates */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Updates</h3>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {waterData.notifications.map((notification) => (
-                <div key={notification.id} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{notification.message}</p>
-                    <p className="text-xs text-gray-500">{notification.time}</p>
-                  </div>
-                </div>
-              ))}
-              {waterData.notifications.length === 0 && (
-                <p className="text-gray-500 text-center py-4">No recent updates</p>
-              )}
-            </div>
-          </div>
-
-          {/* Paddy Fields Summary */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Paddy Fields</h3>
-            <div className="space-y-3">
-              {waterData.paddyFields.slice(0, 3).map((field) => (
-                <div key={field.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{field.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{field.soilType} soil</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-green-600">{field.area} {field.areaUnit}</p>
-                    <div className={`w-2 h-2 rounded-full ${
-                      field.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
-                    }`}></div>
-                  </div>
-                </div>
-              ))}
-              {waterData.paddyFields.length === 0 && (
-                <p className="text-gray-500 text-center py-4">No paddy fields available</p>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -735,7 +514,7 @@ const TankStatusCard = ({ tank, canEdit, isEditing, onEdit, onUpdate, updating }
           {/* Water Level Display/Edit */}
           <div className="text-right">
             {isEditing ? (
-                              <div className="space-y-3">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-gray-600 w-16">Level:</label>
                   <input
