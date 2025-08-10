@@ -17,7 +17,36 @@ class PublicApiService {
         },
         body: JSON.stringify(userData)
       });
-      return await response.json();
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const result = await response.json();
+        
+        // Check for unsuccessful responses even if they're JSON
+        if (!response.ok) {
+          if (response.status === 429) {
+            throw new Error('Too many registration attempts. Please try again later.');
+          } else if (response.status === 400) {
+            throw new Error(result.message || 'Invalid registration data');
+          } else {
+            throw new Error(result.message || `Server error: ${response.status}`);
+          }
+        }
+        
+        return result;
+      } else {
+        // Handle non-JSON responses
+        const text = await response.text();
+        if (response.status === 429) {
+          throw new Error('Too many registration attempts. Please try again later.');
+        } else if (response.status === 400) {
+          throw new Error('Invalid registration data');
+        } else {
+          throw new Error(`Server error: ${text || 'Unknown error'}`);
+        }
+      }
     } catch (error) {
       console.error('Registration API error:', error);
       throw error;
@@ -40,7 +69,35 @@ class PublicApiService {
         body: JSON.stringify({ email, password })
       });
       
-      const result = await response.json();
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      let result;
+      
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+        
+        // Check for unsuccessful responses even if they're JSON
+        if (!response.ok) {
+          if (response.status === 429) {
+            throw new Error('Too many login attempts. Please try again later.');
+          } else if (response.status === 401) {
+            throw new Error('Invalid email or password');
+          } else {
+            throw new Error(result.message || `Server error: ${response.status}`);
+          }
+        }
+        
+      } else {
+        // Handle non-JSON responses (like rate limiting errors)
+        const text = await response.text();
+        if (response.status === 429) {
+          throw new Error('Too many login attempts. Please try again later.');
+        } else if (response.status === 401) {
+          throw new Error('Invalid email or password');
+        } else {
+          throw new Error(`Server error: ${text || 'Unknown error'}`);
+        }
+      }
       
       // If login successful, store token and user data
       if (result.success && result.data) {

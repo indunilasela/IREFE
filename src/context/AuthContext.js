@@ -111,7 +111,9 @@ export const AuthProvider = ({ children }) => {
       let response;
       try {
         // Try PublicUser login first
+        console.log('Attempting PublicUser login...');
         response = await PublicApiService.login(email, password);
+        console.log('PublicUser login response:', response);
         
         if (response.success) {
           localStorage.setItem('token', response.data.token);
@@ -128,13 +130,24 @@ export const AuthProvider = ({ children }) => {
           return response;
         }
       } catch (publicError) {
-        console.log('PublicUser login failed, trying admin login...');
+        console.log('PublicUser login failed, trying admin login...', publicError.message);
+        
+        // If it's a rate limiting error, don't try admin login
+        if (publicError.message.includes('Too many')) {
+          throw publicError;
+        }
+        
+        // Add a small delay before trying admin login to avoid rapid requests
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // If PublicUser login fails, try admin login
         try {
+          console.log('Attempting admin login...');
           response = await authService.login(email, password);
+          console.log('Admin login response:', response);
           
           localStorage.setItem('token', response.token);
+          localStorage.setItem('user', JSON.stringify(response.user));
           
           dispatch({
             type: 'AUTH_SUCCESS',
@@ -146,11 +159,19 @@ export const AuthProvider = ({ children }) => {
 
           return response;
         } catch (adminError) {
+          console.error('Admin login error:', adminError);
+          
+          // If admin login also has rate limiting, throw that error
+          if (adminError.message.includes('Too many')) {
+            throw adminError;
+          }
+          
           // Both login attempts failed
           throw new Error('Invalid email or password');
         }
       }
     } catch (error) {
+      console.error('Login error:', error);
       dispatch({ type: 'AUTH_ERROR', payload: error.message });
       throw error;
     }

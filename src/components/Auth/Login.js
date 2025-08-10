@@ -33,10 +33,13 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     try {
-      await login(data.email, data.password);
+      console.log('Login attempt with:', data.email);
+      const result = await login(data.email, data.password);
+      console.log('Login result:', result);
       toast.success('Login successful!');
     } catch (error) {
-      toast.error(error.message);
+      console.error('Login error:', error);
+      toast.error(error.message || 'Login failed');
     }
   };
 

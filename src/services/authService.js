@@ -3,7 +3,18 @@ import api from './api';
 const authService = {
   async login(email, password) {
     const response = await api.post('/auth/login', { email, password });
-    return response.data;
+    
+    // Handle the response format from your API
+    if (response.success && response.data) {
+      return {
+        user: response.data.user,
+        token: response.data.token,
+        refreshToken: response.data.refreshToken
+      };
+    }
+    
+    // Fallback for direct response
+    return response.data || response;
   },
 
   async register(userData) {
