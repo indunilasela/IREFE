@@ -11,6 +11,7 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
     endDay: canal.endDay?.split ? canal.endDay.split('T')[0] : new Date(canal.endDay || Date.now()).toISOString().split('T')[0],
     canal: canal.canalStatus || canal.status || 'close',
     flowRate: canal.flowRate || 0,
+    sluiceOpeningSize: canal.sluiceOpeningSize || 0,
     // Add assignment fields - handle both data structures
     selectFA: (canal.assignedFA?.map(fa => typeof fa === 'object' ? fa._id : fa)) || [],
     selectIrrigator: (canal.assignedIrrigators?.map(irr => typeof irr === 'object' ? irr._id : irr)) || []
@@ -65,13 +66,14 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
       canal: status
     };
     
-    // If canal is closed, set flow rate to 0
+    // If canal is closed, set flow rate and sluice opening size to 0
     if (status === 'close') {
       newFormData.flowRate = 0;
+      newFormData.sluiceOpeningSize = 0;
     }
     
     setFormData(newFormData);
-    console.log('🚰 Canal status changed to:', status, 'Flow rate:', newFormData.flowRate);
+    console.log('🚰 Canal status changed to:', status, 'Flow rate:', newFormData.flowRate, 'Sluice opening size:', newFormData.sluiceOpeningSize);
   };
 
   const getStatusChangeMessage = () => {
@@ -209,7 +211,7 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Flow Rate (L/s) *
+                  Flow Rate (cusec) *
                 </label>
                 <input
                   type="number"
@@ -226,6 +228,30 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
                 {formData.canal === 'close' && (
                   <p className="text-xs text-gray-500 mt-1">
                     Flow rate is automatically set to 0 when canal is closed
+                  </p>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sluice Opening Size (inch) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  required
+                  value={formData.sluiceOpeningSize}
+                  onChange={(e) => setFormData({...formData, sluiceOpeningSize: Number(e.target.value)})}
+                  disabled={formData.canal === 'close'}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                    formData.canal === 'close' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="0.0"
+                />
+                {formData.canal === 'close' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sluice opening size is automatically set to 0 when canal is closed
                   </p>
                 )}
               </div>

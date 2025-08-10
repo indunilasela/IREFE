@@ -11,7 +11,8 @@ const SubCanalForm = ({ onClose, onCreate, availableParents, availableFA, availa
     startDay: '',
     endDay: '',
     canal: 'close',
-    flowRate: 0
+    flowRate: 0,
+    sluiceOpeningSize: 0
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -207,7 +208,7 @@ const SubCanalForm = ({ onClose, onCreate, availableParents, availableFA, availa
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Flow Rate (L/s) *
+                Flow Rate (cusec) *
               </label>
               <input
                 type="number"
@@ -217,6 +218,22 @@ const SubCanalForm = ({ onClose, onCreate, availableParents, availableFA, availa
                 onChange={(e) => setFormData({...formData, flowRate: Number(e.target.value)})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="0"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sluice Opening Size (inch) *
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                required
+                value={formData.sluiceOpeningSize}
+                onChange={(e) => setFormData({...formData, sluiceOpeningSize: Number(e.target.value)})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0.0"
               />
             </div>
           </div>
