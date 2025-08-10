@@ -1,269 +1,427 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import toast from 'react-hot-toast';
-import { UserPlus, Mail, Phone, CreditCard } from 'lucide-react';
-import api from '../../services/api';
+import { UserPlus, Droplets, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import PublicApiService from '../../services/publicApi';
 
-const USER_ROLES = {
-  DIA: 'DIA',
-  DA: 'DA',
-  EA: 'EA',
-  FA: 'FA',
-  IRRIGATOR: 'Irrigator',
-  FARMER: 'Farmer'
-};
-
-const schema = yup.object({
-  userType: yup.string().required('User type is required'),
-  firstName: yup.string().required('First name is required'),
-  lastName: yup.string().when('userType', {
-    is: USER_ROLES.FARMER,
-    then: (schema) => schema,
-    otherwise: (schema) => schema.required('Last name is required')
-  }),
-  email: yup.string().when('userType', {
-    is: USER_ROLES.FARMER,
-    then: (schema) => schema.email('Invalid email'),
-    otherwise: (schema) => schema.email('Invalid email').required('Email is required')
-  }),
-  phoneNumber: yup.string().when('userType', {
-    is: USER_ROLES.FARMER,
-    then: (schema) => schema.required('Phone number is required for farmers'),
-    otherwise: (schema) => schema.required('Phone number is required')
-  }),
-  idNumber: yup.string().when('userType', {
-    is: USER_ROLES.FARMER,
-    then: (schema) => schema,
-    otherwise: (schema) => schema.required('ID number is required')
-  })
-});
-
-const UserRegistration = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors }
-  } = useForm({
-    resolver: yupResolver(schema)
+const UserRegister = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    nameOfReservoir: '',
+    range: '',
+    division: '',
+    scheme: ''
   });
+  
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const selectedUserType = watch('userType');
-  const isFarmer = selectedUserType === USER_ROLES.FARMER;
+  const validateForm = () => {
+    const newErrors = {};
 
-  const onSubmit = async (data) => {
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords must match';
+    }
+
+    if (!formData.nameOfReservoir.trim()) {
+      newErrors.nameOfReservoir = 'Name of reservoir is required';
+    }
+
+    if (!formData.range.trim()) {
+      newErrors.range = 'Range is required';
+    }
+
+    if (!formData.division.trim()) {
+      newErrors.division = 'Division is required';
+    }
+
+    if (!formData.scheme.trim()) {
+      newErrors.scheme = 'Scheme is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
-      const response = await api.post('/admin/register-user', data);
+      // Remove confirmPassword before sending to backend
+      const { confirmPassword, ...registrationData } = formData;
       
-      toast.success(`${data.userType} registered successfully!`);
+      // Use PublicApiService for registration
+      const response = await PublicApiService.register(registrationData);
       
-      // Show default password if no email provided
-      if (!data.email && response.data.defaultPassword) {
-        toast.success(`Default password: ${response.data.defaultPassword}`, {
-          duration: 10000
+      if (response.success) {
+        alert('Registration successful! Welcome email has been sent to your email address. You can now login with your credentials.');
+        
+        // Reset form
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          nameOfReservoir: '',
+          range: '',
+          division: '',
+          scheme: ''
         });
+        
+        // Navigate to login page after 2 seconds
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        alert(response.message || 'Registration failed. Please try again.');
       }
       
-      reset();
     } catch (error) {
-      toast.error(error.message || 'Registration failed');
+      console.error('Registration error:', error);
+      alert('Registration failed. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getRoleDescription = (role) => {
-    const descriptions = {
-      DIA: 'Divisional Irrigation Assistant',
-      DA: 'Divisional Agrarian Officer',
-      EA: 'Engineering Assistant',
-      FA: 'Field Assistant',
-      Irrigator: 'Irrigator',
-      Farmer: 'Farmer'
-    };
-    return descriptions[role] || role;
+  const handleLoginClick = () => {
+    // Navigate to login page
+    navigate('/login');
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center mb-6">
-          <UserPlus className="h-6 w-6 text-blue-600 mr-3" />
-          <h2 className="text-2xl font-bold text-gray-900">Register New User</h2>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-600">
+            <Droplets className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Create Your Account
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Register for read-only access to water management data for your reservoir
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* User Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              User Type *
-            </label>
-            <select
-              {...register('userType')}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.userType ? 'border-red-300' : 'border-gray-300'
-              }`}
-            >
-              <option value="">Select user type</option>
-              <option value={USER_ROLES.DIA}>DIA - Divisional Irrigation Assistant</option>
-              <option value={USER_ROLES.DA}>DA - Divisional Agrarian Officer</option>
-              <option value={USER_ROLES.EA}>EA - Engineering Assistant</option>
-              <option value={USER_ROLES.FA}>FA - Field Assistant</option>
-              <option value={USER_ROLES.IRRIGATOR}>Irrigator</option>
-              <option value={USER_ROLES.FARMER}>Farmer</option>
-            </select>
-            {errors.userType && (
-              <p className="mt-1 text-sm text-red-600">{errors.userType.message}</p>
-            )}
-          </div>
-
-          {/* Personal Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name *
-              </label>
-              <input
-                {...register('firstName')}
-                type="text"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.firstName ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Enter first name"
-              />
-              {errors.firstName && (
-                <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name {!isFarmer && '*'}
-              </label>
-              <input
-                {...register('lastName')}
-                type="text"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.lastName ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Enter last name"
-              />
-              {errors.lastName && (
-                <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div className="space-y-4">
-            <div>
-              <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                <Mail className="h-4 w-4 mr-1" />
-                Email {isFarmer ? '(Optional)' : '*'}
-              </label>
-              <input
-                {...register('email')}
-                type="email"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Enter email address"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
-              {isFarmer && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Email is optional for farmers. If not provided, default password will be shown after registration.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                <Phone className="h-4 w-4 mr-1" />
-                Phone Number *
-              </label>
-              <input
-                {...register('phoneNumber')}
-                type="tel"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.phoneNumber ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="+94712345678"
-              />
-              {errors.phoneNumber && (
-                <p className="mt-1 text-sm text-red-600">{errors.phoneNumber.message}</p>
-              )}
-            </div>
-
-            {!isFarmer && (
-              <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  ID Number *
-                </label>
-                <input
-                  {...register('idNumber')}
-                  type="text"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.idNumber ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter ID number"
-                />
-                {errors.idNumber && (
-                  <p className="mt-1 text-sm text-red-600">{errors.idNumber.message}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Registration Info
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-blue-800 mb-2">Registration Information</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• A default password will be generated automatically</li>
-              <li>• Password will be sent via email (if email provided)</li>
-              <li>• User must change password on first login</li>
-              <li>• User will have immediate access after registration</li>
-            </ul>
-          </div> */}
-
-          {/* Submit Buttons */}
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Registering...
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="space-y-6">
+            {/* Personal Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.firstName ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter your first name"
+                  />
+                  {errors.firstName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                  )}
                 </div>
-              ) : (
-                'Register User'
-              )}
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => reset()}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            >
-              Clear Form
-            </button>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.lastName ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter your last name"
+                  />
+                  {errors.lastName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter your email address"
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Water Management Details */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Water Management Details</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name of Reservoir *
+                  </label>
+                  <input
+                    type="text"
+                    name="nameOfReservoir"
+                    value={formData.nameOfReservoir}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.nameOfReservoir ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter reservoir name"
+                  />
+                  {errors.nameOfReservoir && (
+                    <p className="mt-1 text-sm text-red-600">{errors.nameOfReservoir}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Range *
+                  </label>
+                  <input
+                    type="text"
+                    name="range"
+                    value={formData.range}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.range ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter range"
+                  />
+                  {errors.range && (
+                    <p className="mt-1 text-sm text-red-600">{errors.range}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Division *
+                  </label>
+                  <input
+                    type="text"
+                    name="division"
+                    value={formData.division}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.division ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter division"
+                  />
+                  {errors.division && (
+                    <p className="mt-1 text-sm text-red-600">{errors.division}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheme *
+                  </label>
+                  <input
+                    type="text"
+                    name="scheme"
+                    value={formData.scheme}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.scheme ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter scheme"
+                  />
+                  {errors.scheme && (
+                    <p className="mt-1 text-sm text-red-600">{errors.scheme}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Account Security */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Security</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.password ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Create a password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Confirm your password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Welcome Email Notice */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-green-800 mb-2">Account Access</h4>
+              <p className="text-sm text-green-700">
+                After successful registration, a welcome email will be sent to your email address. 
+                You will have read-only access to view water management data (tanks, canals, schedules) 
+                specific to your registered reservoir details. No default password will be included in the email.
+              </p>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creating Account...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Create Account
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Login Link */}
+            <div className="text-center pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                Already have an account?{' '}
+                <button 
+                  onClick={handleLoginClick}
+                  className="text-blue-600 hover:text-blue-500 font-medium underline bg-transparent border-none cursor-pointer"
+                >
+                  Login here
+                </button>
+              </p>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 };
 
-export default UserRegistration;
+export default UserRegister;

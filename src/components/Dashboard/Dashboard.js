@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Edit, Save, Droplets, MapPin, Calendar } from 'lucide-react';
-
-// Mock auth context for demonstration
-const useAuth = () => ({
-  user: {
-    firstName: 'John',
-    role: 'Administrator',
-    isFirstLogin: false
-  }
-});
+import { useAuth } from '../../context/AuthContext';
+import UserDashboard from './UserDashboard';
 
 // Tank Card Component
 const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
@@ -144,6 +137,12 @@ const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Route to UserDashboard for User and PublicUser roles
+  if (user?.role === 'User' || user?.role === 'PublicUser') {
+    return <UserDashboard />;
+  }
+  
   const [editingTank, setEditingTank] = useState(null);
   const [tanks, setTanks] = useState([]);
   const [loading, setLoading] = useState(true);

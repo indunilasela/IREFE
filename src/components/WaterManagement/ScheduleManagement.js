@@ -55,7 +55,7 @@ const ScheduleManagement = () => {
   const canCreateSchedules = user?.role === 'EA'; // Only EA can create schedules
   const canEditSchedules = ['DIA', 'DA', 'EA'].includes(user?.role);
   const canUpdateGates = ['DIA', 'DA', 'EA', 'FA', 'Irrigator'].includes(user?.role);
-  const isReadOnly = ['Admin', 'Farmer'].includes(user?.role);
+  const isReadOnly = ['Admin', 'Farmer', 'User', 'PublicUser'].includes(user?.role);
 
   useEffect(() => {
     fetchSchedules();

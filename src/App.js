@@ -20,9 +20,10 @@ import WaterManagement from './components/WaterManagement/WaterManagement';
 import TankManagement from './components/WaterManagement/TankManagement';
 import TankDetailsPage from './components/WaterManagement/TankDetailsPage';
 import CanalManagement from './components/WaterManagement/CanalManagement'; // ✅ Updated Hierarchical Version
-//import PaddyFieldManagement from './components/WaterManagement/PaddyFieldManagement';
+import PaddyFieldManagement from './components/WaterManagement/PaddyFieldManagement';
 import ScheduleManagement from './components/WaterManagement/ScheduleManagement';
 import NotificationCenter from './components/WaterManagement/NotificationCenter';
+import Profile from './components/Common/Profile';
 import './styles/globals.css';
 
 // Dashboard Router Component
@@ -79,6 +80,7 @@ function App() {
            <Route path="/login" element={<Login />} />
            <Route path="/forgot-password" element={<ForgotPassword />} />
            <Route path="/reset-password" element={<ResetPassword />} />
+           <Route path="/register" element={<UserRegistration />} />
            <Route path="/admin-register" element={<DirectAdminRegister />} />
            <Route path="/admin-registration-success" element={<AdminRegistrationSuccess />} />
            
@@ -201,6 +203,14 @@ function App() {
            } />
            
            {/* User Settings */}
+           <Route path="/profile" element={
+             <ProtectedRoute>
+               <Layout>
+                 <Profile />
+               </Layout>
+             </ProtectedRoute>
+           } />
+           
            <Route path="/change-password" element={
              <ProtectedRoute>
                <Layout>

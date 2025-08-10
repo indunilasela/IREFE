@@ -17,16 +17,12 @@ import {
   Activity
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import PublicApiService from '../../services/publicApi';
 
 const WaterManagement = () => {
-  // Mock user context - replace with your actual auth context
-  const [user] = useState({ 
-    role: 'EA', 
-    id: '1', 
-    firstName: 'John', 
-    lastName: 'Doe',
-    email: 'john@example.com'
-  });
+  // Get current user from auth context
+  const { user } = useAuth();
 
   const [waterData, setWaterData] = useState({
     tanks: [],
@@ -45,7 +41,7 @@ const WaterManagement = () => {
   // Determine if user can edit data
   const canEdit = ['DIA', 'DA', 'EA', 'FA', 'Irrigator'].includes(user?.role);
   const canCreateTanks = ['EA'].includes(user?.role);
-  const isReadOnly = ['Farmer', 'Admin'].includes(user?.role);
+  const isReadOnly = ['Farmer', 'Admin', 'User', 'PublicUser'].includes(user?.role);
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -63,12 +59,40 @@ const WaterManagement = () => {
 
   const fetchAllWaterData = async () => {
     setLoading(true);
-    await Promise.all([
-      fetchTanks(),
-      fetchCanals(),
-      fetchSchedules(),
-      fetchNotifications()
-    ]);
+    
+    // Use PublicApiService for PublicUser role
+    if (user?.role === 'PublicUser') {
+      try {
+        const response = await PublicApiService.getWaterManagementData();
+        if (response.success || response.data) {
+          setWaterData(prev => ({
+            ...prev,
+            tanks: response.data?.tanks || [],
+            canals: response.data?.canals || [],
+            schedules: response.data?.schedules || [],
+            notifications: [] // PublicUser doesn't get notifications
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch PublicUser data:', error);
+        showToast('Failed to load water management data', 'error');
+      }
+    } else {
+      // Use individual API calls for other roles
+      const fetchPromises = [
+        fetchTanks(),
+        fetchCanals(),
+        fetchSchedules()
+      ];
+      
+      // Only fetch notifications for users who have access to them
+      if (!isReadOnly) {
+        fetchPromises.push(fetchNotifications());
+      }
+      
+      await Promise.all(fetchPromises);
+    }
+    
     setLoading(false);
   };
 

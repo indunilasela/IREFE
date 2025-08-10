@@ -22,7 +22,7 @@ const Sidebar = () => {
       name: 'Dashboard',
       href: '/',
       icon: Home,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Register User',
@@ -40,25 +40,25 @@ const Sidebar = () => {
       name: 'Water Management',
       href: '/water-management',
       icon: Droplets,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Tanks',
       href: '/tanks',
       icon: MapPin,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Canals',
       href: '/canals',
       icon: Navigation,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Schedules',
       href: '/schedules',
       icon: Calendar,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Notifications',

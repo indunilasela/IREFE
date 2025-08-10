@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import authService from '../services/authService';
+import PublicApiService from '../services/publicApi';
 
 const AuthContext = createContext();
 
@@ -63,15 +64,36 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const storedUser = localStorage.getItem('user');
+      
+      if (token && storedUser) {
         try {
-          const user = await authService.getProfile();
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: { user, token }
-          });
+          const user = JSON.parse(storedUser);
+          
+          // Check if token is still valid
+          if (user.role === 'PublicUser') {
+            // For PublicUser, verify token with PublicApiService
+            if (PublicApiService.isAuthenticated()) {
+              dispatch({
+                type: 'AUTH_SUCCESS',
+                payload: { user, token }
+              });
+            } else {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              dispatch({ type: 'AUTH_ERROR', payload: null });
+            }
+          } else {
+            // For admin users, verify with authService
+            const profileUser = await authService.getProfile();
+            dispatch({
+              type: 'AUTH_SUCCESS',
+              payload: { user: profileUser, token }
+            });
+          }
         } catch (error) {
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
           dispatch({ type: 'AUTH_ERROR', payload: error.message });
         }
       } else {
@@ -85,19 +107,49 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       dispatch({ type: 'AUTH_START' });
-      const response = await authService.login(email, password);
       
-      localStorage.setItem('token', response.token);
-      
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: {
-          user: response.user,
-          token: response.token
-        }
-      });
+      let response;
+      try {
+        // Try PublicUser login first
+        response = await PublicApiService.login(email, password);
+        
+        if (response.success) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: {
+              user: response.data.user,
+              token: response.data.token
+            }
+          });
 
-      return response;
+          return response;
+        }
+      } catch (publicError) {
+        console.log('PublicUser login failed, trying admin login...');
+        
+        // If PublicUser login fails, try admin login
+        try {
+          response = await authService.login(email, password);
+          
+          localStorage.setItem('token', response.token);
+          
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: {
+              user: response.user,
+              token: response.token
+            }
+          });
+
+          return response;
+        } catch (adminError) {
+          // Both login attempts failed
+          throw new Error('Invalid email or password');
+        }
+      }
     } catch (error) {
       dispatch({ type: 'AUTH_ERROR', payload: error.message });
       throw error;
@@ -151,11 +203,19 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await authService.logout();
+      const user = state.user;
+      if (user?.role === 'PublicUser') {
+        // For PublicUser, just clear local storage
+        PublicApiService.removeToken();
+      } else {
+        // For admin users, call logout API
+        await authService.logout();
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       dispatch({ type: 'LOGOUT' });
     }
   };

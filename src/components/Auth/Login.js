@@ -139,18 +139,33 @@ const Login = () => {
           </div>
         </form>
 
-        {/* Admin Registration Link - Properly placed outside the form */}
-        <div className="text-center mt-6 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600 mb-3">
-            Need administrator access to manage water resources?
-          </p>
-          <Link
-            to="/admin-register"
-            className="inline-flex items-center text-blue-600 hover:text-blue-500 font-medium text-sm"
-          >
-            <UserPlus className="h-4 w-4 mr-1" />
-            Register as Administrator
-          </Link>
+        {/* Registration Links - Properly placed outside the form */}
+        <div className="text-center mt-6 pt-6 border-t border-gray-200 space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-3">
+              New user? Get read-only access to water management data
+            </p>
+            <Link
+              to="/register"
+              className="inline-flex items-center text-green-600 hover:text-green-500 font-medium text-sm"
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              Register for Water Data Access
+            </Link>
+          </div>
+          
+          <div className="border-t border-gray-100 pt-4">
+            <p className="text-sm text-gray-600 mb-3">
+              Need administrator access to manage water resources?
+            </p>
+            <Link
+              to="/admin-register"
+              className="inline-flex items-center text-blue-600 hover:text-blue-500 font-medium text-sm"
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              Register as Administrator
+            </Link>
+          </div>
         </div>
       </div>
     </div>
