@@ -18,6 +18,7 @@ import UserList from './components/Admin/UserList';
 import Dashboard from './components/Dashboard/Dashboard';
 import WaterManagement from './components/WaterManagement/WaterManagement';
 import TankManagement from './components/WaterManagement/TankManagement';
+import TankDetailsPage from './components/WaterManagement/TankDetailsPage';
 import CanalManagement from './components/WaterManagement/CanalManagement'; // ✅ Updated Hierarchical Version
 //import PaddyFieldManagement from './components/WaterManagement/PaddyFieldManagement';
 import ScheduleManagement from './components/WaterManagement/ScheduleManagement';
@@ -103,6 +104,14 @@ function App() {
              <ProtectedRoute>
                <Layout>
                  <TankManagement />
+               </Layout>
+             </ProtectedRoute>
+           } />
+           
+           <Route path="/tanks/:tankId" element={
+             <ProtectedRoute>
+               <Layout>
+                 <TankDetailsPage />
                </Layout>
              </ProtectedRoute>
            } />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Edit, Save, Droplets, MapPin, Calendar } from 'lucide-react';
 
 // Mock auth context for demonstration
@@ -12,6 +13,7 @@ const useAuth = () => ({
 
 // Tank Card Component
 const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
+  const navigate = useNavigate();
   const [editData, setEditData] = useState(tank);
   const levelPercentage = tank.waterLevelPercentage || Math.round((tank.currentLevel / tank.capacity) * 100);
 
@@ -24,8 +26,19 @@ const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
     onEdit(null);
   };
 
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking on buttons or if editing
+    if (e.target.closest('button') || isEditing) {
+      return;
+    }
+    navigate(`/tanks/${tank.id}`);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div 
+      className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow duration-300"
+      onClick={handleCardClick}
+    >
       <div className="flex justify-between items-start mb-4">
         <div>
           <div className="flex items-center gap-2">
@@ -108,16 +121,11 @@ const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <MapPin className="h-4 w-4 mr-2" />
-              <span>Source: {tank.waterSourceName || tank.source}</span>
+              <span>Scheme: {tank.waterSourceName || tank.source}</span>
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <Calendar className="h-4 w-4 mr-2" />
-              <span>
-                {tank.openingDate && tank.closingDate 
-                  ? `${new Date(tank.openingDate).toLocaleDateString()} - ${new Date(tank.closingDate).toLocaleDateString()}`
-                  : 'No dates set'
-                }
-              </span>
+              <span>Location: {tank.location}</span>
             </div>
             <div className="text-xs text-gray-500 pt-2 border-t">
               <div>Last updated: {new Date(tank.lastUpdated).toLocaleDateString()}</div>
@@ -134,6 +142,7 @@ const TankCard = ({ tank, canEdit, onEdit, onUpdate, isEditing }) => {
 
 // Main Dashboard Component
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [editingTank, setEditingTank] = useState(null);
   const [tanks, setTanks] = useState([]);
@@ -157,20 +166,20 @@ const Dashboard = () => {
       const data = await response.json();
       
       // Transform backend data to match frontend expectations
-      const tanksList = data.data?.tanks || data.tanks || [];
+      const tanksList = data.data?.tanks || data.tanks || (data.data ? [data.data] : []);
       const transformedTanks = tanksList.map(tank => ({
         id: tank._id || tank.id,
         name: tank.name,
-        capacity: tank.capacity,
-        currentLevel: tank.currentWaterLevel,
-        source: tank.waterSource,
-        waterSourceName: tank.waterSourceName,
-        openingDate: tank.openingDate ? new Date(tank.openingDate).toISOString().split('T')[0] : '',
-        closingDate: tank.closingDate ? new Date(tank.closingDate).toISOString().split('T')[0] : '',
-        location: tank.location,
-        status: tank.status || 'Active',
-        lastUpdated: tank.updatedAt || tank.lastUpdated || new Date().toISOString(),
-        waterLevelPercentage: tank.waterLevelPercentage || Math.round((tank.currentWaterLevel / tank.capacity) * 100),
+        capacity: tank.fullCapacity,
+        currentLevel: tank.availabilityCapacity,
+        source: tank.scheme,
+        waterSourceName: tank.scheme,
+        openingDate: '',
+        closingDate: '',
+        location: `${tank.range}, ${tank.division}`,
+        status: tank.status || 'active',
+        lastUpdated: tank.updatedAt || tank.lastUpdateDate || new Date().toISOString(),
+        waterLevelPercentage: tank.availabilityPercentage || Math.round((tank.availabilityCapacity / tank.fullCapacity) * 100),
         createdBy: tank.createdBy,
         lastUpdatedBy: tank.lastUpdatedBy
       }));
