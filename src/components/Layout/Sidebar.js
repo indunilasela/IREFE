@@ -20,19 +20,19 @@ const Sidebar = () => {
   const navigation = [
     {
       name: 'Dashboard',
-      href: '/',
+      href: user?.role === 'Admin' ? '/admin/dashboard' : '/',
       icon: Home,
       roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Register User',
-      href: '/register',
+      href: '/admin/register-user',
       icon: UserPlus,
       roles: ['Admin']
     },
     {
-      name: 'Users',
-      href: '/users',
+      name: 'Manage Users',
+      href: '/admin/users',
       icon: Users,
       roles: ['Admin']
     },
