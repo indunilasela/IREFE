@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import authService from '../services/authService';
+import PublicApiService from '../services/publicApi';
 
 const AuthContext = createContext();
 
@@ -63,15 +64,36 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const storedUser = localStorage.getItem('user');
+      
+      if (token && storedUser) {
         try {
-          const user = await authService.getProfile();
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: { user, token }
-          });
+          const user = JSON.parse(storedUser);
+          
+          // Check if token is still valid
+          if (user.role === 'PublicUser') {
+            // For PublicUser, verify token with PublicApiService
+            if (PublicApiService.isAuthenticated()) {
+              dispatch({
+                type: 'AUTH_SUCCESS',
+                payload: { user, token }
+              });
+            } else {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              dispatch({ type: 'AUTH_ERROR', payload: null });
+            }
+          } else {
+            // For admin users, verify with authService
+            const profileUser = await authService.getProfile();
+            dispatch({
+              type: 'AUTH_SUCCESS',
+              payload: { user: profileUser, token }
+            });
+          }
         } catch (error) {
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
           dispatch({ type: 'AUTH_ERROR', payload: error.message });
         }
       } else {
@@ -85,20 +107,71 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       dispatch({ type: 'AUTH_START' });
-      const response = await authService.login(email, password);
       
-      localStorage.setItem('token', response.token);
-      
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: {
-          user: response.user,
-          token: response.token
-        }
-      });
+      let response;
+      try {
+        // Try PublicUser login first
+        console.log('Attempting PublicUser login...');
+        response = await PublicApiService.login(email, password);
+        console.log('PublicUser login response:', response);
+        
+        if (response.success) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: {
+              user: response.data.user,
+              token: response.data.token
+            }
+          });
 
-      return response;
+          return response;
+        }
+      } catch (publicError) {
+        console.log('PublicUser login failed, trying admin login...', publicError.message);
+        
+        // If it's a rate limiting error, don't try admin login
+        if (publicError.message.includes('Too many')) {
+          throw publicError;
+        }
+        
+        // Add a small delay before trying admin login to avoid rapid requests
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // If PublicUser login fails, try admin login
+        try {
+          console.log('Attempting admin login...');
+          response = await authService.login(email, password);
+          console.log('Admin login response:', response);
+          
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('user', JSON.stringify(response.user));
+          
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: {
+              user: response.user,
+              token: response.token
+            }
+          });
+
+          return response;
+        } catch (adminError) {
+          console.error('Admin login error:', adminError);
+          
+          // If admin login also has rate limiting, throw that error
+          if (adminError.message.includes('Too many')) {
+            throw adminError;
+          }
+          
+          // Both login attempts failed
+          throw new Error('Invalid email or password');
+        }
+      }
     } catch (error) {
+      console.error('Login error:', error);
       dispatch({ type: 'AUTH_ERROR', payload: error.message });
       throw error;
     }
@@ -151,11 +224,19 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await authService.logout();
+      const user = state.user;
+      if (user?.role === 'PublicUser') {
+        // For PublicUser, just clear local storage
+        PublicApiService.removeToken();
+      } else {
+        // For admin users, call logout API
+        await authService.logout();
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       dispatch({ type: 'LOGOUT' });
     }
   };

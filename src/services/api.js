@@ -43,8 +43,15 @@ api.interceptors.response.use(
         return Promise.reject(new Error('Session expired. Please login again.'));
       }
       
+      // Handle rate limiting errors
+      if (status === 429) {
+        const errorMessage = 'Too many requests. Please try again later.';
+        toast.error(errorMessage);
+        return Promise.reject(new Error(errorMessage));
+      }
+      
       // Handle other errors
-      const errorMessage = data?.error?.message || 'An error occurred';
+      const errorMessage = data?.error?.message || data?.message || 'An error occurred';
       
       // Don't show toast for certain error types
       if (!['VALIDATION_ERROR', 'USER_EXISTS'].includes(data?.error?.code)) {

@@ -8,7 +8,9 @@ import {
   Calendar,
   BarChart3,
   Settings,
-  UserPlus
+  UserPlus,
+  Navigation,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -18,19 +20,19 @@ const Sidebar = () => {
   const navigation = [
     {
       name: 'Dashboard',
-      href: '/',
+      href: user?.role === 'Admin' ? '/admin/dashboard' : '/',
       icon: Home,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Register User',
-      href: '/register',
+      href: '/admin/register-user',
       icon: UserPlus,
       roles: ['Admin']
     },
     {
-      name: 'Users',
-      href: '/users',
+      name: 'Manage Users',
+      href: '/admin/users',
       icon: Users,
       roles: ['Admin']
     },
@@ -38,31 +40,31 @@ const Sidebar = () => {
       name: 'Water Management',
       href: '/water-management',
       icon: Droplets,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Tanks',
       href: '/tanks',
       icon: MapPin,
-      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
+    },
+    {
+      name: 'Canals',
+      href: '/canals',
+      icon: Navigation,
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
     },
     {
       name: 'Schedules',
       href: '/schedules',
       icon: Calendar,
+      roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer', 'User', 'PublicUser']
+    },
+    {
+      name: 'Notifications',
+      href: '/notifications',
+      icon: Bell,
       roles: ['Admin', 'DIA', 'DA', 'EA', 'FA', 'Irrigator', 'Farmer']
-    },
-    {
-      name: 'Reports',
-      href: '/reports',
-      icon: BarChart3,
-      roles: ['Admin', 'DIA', 'DA', 'EA']
-    },
-    {
-      name: 'Settings',
-      href: '/settings',
-      icon: Settings,
-      roles: ['Admin']
     }
   ];
 
