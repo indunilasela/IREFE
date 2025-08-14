@@ -86,7 +86,8 @@ const CanalTree = ({
     if (canal.type === 'tank') return null;
     
     const assignedFA = canal.assignedFA || [];
-    const assignedIrrigators = canal.assignedIrrigators || [];
+    // Handle multiple possible field names for irrigators
+    const assignedIrrigators = canal.assignedIrrigators || canal.irrigators || canal.assignedIrrigator || [];
     
     return (
       <div className="flex items-center space-x-2 mt-1">
@@ -112,8 +113,19 @@ const CanalTree = ({
   const renderAssignedUsers = (canal) => {
     if (canal.type === 'tank') return null;
     
+    // Debug logging to understand the data structure
+    if (canal.name && (canal.assignedFA?.length > 0 || canal.assignedIrrigators?.length > 0 || canal.irrigators?.length > 0)) {
+      console.log('🔍 Canal assignment data for:', canal.name);
+      console.log('  - assignedFA:', canal.assignedFA);
+      console.log('  - assignedIrrigators:', canal.assignedIrrigators);
+      console.log('  - irrigators:', canal.irrigators);
+      console.log('  - assignedIrrigator:', canal.assignedIrrigator);
+      console.log('  - All canal fields:', Object.keys(canal));
+    }
+    
     const assignedFA = canal.assignedFA || [];
-    const assignedIrrigators = canal.assignedIrrigators || [];
+    // Handle multiple possible field names for irrigators
+    const assignedIrrigators = canal.assignedIrrigators || canal.irrigators || canal.assignedIrrigator || [];
     
     if (assignedFA.length === 0 && assignedIrrigators.length === 0) {
       return (

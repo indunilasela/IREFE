@@ -12,9 +12,9 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
     canal: canal.canalStatus || canal.status || 'close',
     flowRate: canal.flowRate || 0,
     sluiceOpeningSize: canal.sluiceOpeningSize || 0,
-    // Add assignment fields - handle both data structures
-    selectFA: (canal.assignedFA?.map(fa => typeof fa === 'object' ? fa._id : fa)) || [],
-    selectIrrigator: (canal.assignedIrrigators?.map(irr => typeof irr === 'object' ? irr._id : irr)) || []
+    // Add assignment fields - handle multiple field names and ensure string IDs
+    selectFA: (canal.assignedFA?.map(fa => typeof fa === 'object' ? String(fa._id) : String(fa))) || [],
+    selectIrrigator: ((canal.assignedIrrigators || canal.irrigators || canal.assignedIrrigator || [])?.map(irr => typeof irr === 'object' ? String(irr._id) : String(irr))) || []
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,6 +28,16 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
   console.log('🔍 UpdateCanalForm - Available Irrigators:', availableIrrigators?.length);
   console.log('🔍 UpdateCanalForm - Current FA assignments:', formData.selectFA);
   console.log('🔍 UpdateCanalForm - Current Irrigator assignments:', formData.selectIrrigator);
+  
+  // Debug assignment data
+  if (canal.assignedIrrigators) {
+    console.log('🚿 Canal.assignedIrrigators raw:', canal.assignedIrrigators);
+    console.log('🚿 Canal.assignedIrrigators processed:', canal.assignedIrrigators?.map(irr => typeof irr === 'object' ? String(irr._id) : String(irr)));
+  }
+  if (canal.assignedFA) {
+    console.log('👥 Canal.assignedFA raw:', canal.assignedFA);
+    console.log('👥 Canal.assignedFA processed:', canal.assignedFA?.map(fa => typeof fa === 'object' ? String(fa._id) : String(fa)));
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -92,20 +102,26 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
 
   const handleFASelection = (faId) => {
     const currentFA = formData.selectFA || [];
-    const newFA = currentFA.includes(faId) 
-      ? currentFA.filter(id => id !== faId)
-      : [...currentFA, faId];
+    const stringFAId = String(faId); // Ensure string comparison
+    const newFA = currentFA.includes(stringFAId) 
+      ? currentFA.filter(id => id !== stringFAId)
+      : [...currentFA, stringFAId];
     setFormData({...formData, selectFA: newFA});
     console.log('👥 FA selection changed:', newFA);
+    console.log('👥 Clicked FA ID:', stringFAId);
+    console.log('👥 Current selections:', currentFA);
   };
 
   const handleIrrigatorSelection = (irrId) => {
     const currentIrr = formData.selectIrrigator || [];
-    const newIrr = currentIrr.includes(irrId) 
-      ? currentIrr.filter(id => id !== irrId)
-      : [...currentIrr, irrId];
+    const stringIrrId = String(irrId); // Ensure string comparison
+    const newIrr = currentIrr.includes(stringIrrId) 
+      ? currentIrr.filter(id => id !== stringIrrId)
+      : [...currentIrr, stringIrrId];
     setFormData({...formData, selectIrrigator: newIrr});
     console.log('🚿 Irrigator selection changed:', newIrr);
+    console.log('🚿 Clicked irrigator ID:', stringIrrId);
+    console.log('🚿 Current selections:', currentIrr);
   };
 
   // Handle canal status change - auto set flow rate to 0 when closed
@@ -325,7 +341,7 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
                       <label key={fa._id} className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded">
                         <input
                           type="checkbox"
-                          checked={formData.selectFA.includes(fa._id)}
+                          checked={formData.selectFA.includes(String(fa._id))}
                           onChange={() => handleFASelection(fa._id)}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                         />
@@ -354,7 +370,7 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
                       <label key={irr._id} className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded">
                         <input
                           type="checkbox"
-                          checked={formData.selectIrrigator.includes(irr._id)}
+                          checked={formData.selectIrrigator.includes(String(irr._id))}
                           onChange={() => handleIrrigatorSelection(irr._id)}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                         />
