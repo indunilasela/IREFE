@@ -12,7 +12,8 @@ import {
   Clock,
   AlertCircle,
   Plus,
-  Database
+  Database,
+  Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,7 @@ const CanalTree = ({
   expandedNodes,
   toggleNode,
   onCanalSelect,
+  onCanalDelete,
   user,
   canCreate,
   setShowMainCanalForm,
@@ -257,6 +259,21 @@ const CanalTree = ({
                 <Edit className="h-4 w-4 text-blue-500 hover:text-blue-700" />
               </button>
             )}
+            
+            {/* Delete button - EA only */}
+            {user?.role === 'EA' && node.type !== 'tank' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('🗑️ Delete button clicked for:', node.name);
+                  onCanalDelete(node);
+                }}
+                className="p-2 hover:bg-red-50 hover:shadow-md rounded-lg transition-all duration-200"
+                title="Delete canal (EA only)"
+              >
+                <Trash2 className="h-4 w-4 text-red-500 hover:text-red-700" />
+              </button>
+            )}
           </div>
         </div>
         
@@ -403,6 +420,21 @@ const CanalTree = ({
                 title="Edit assigned canal"
               >
                 <Edit className="h-4 w-4 text-blue-500 hover:text-blue-700" />
+              </button>
+            )}
+            
+            {/* Delete button - EA only (even for assigned canals) */}
+            {user?.role === 'EA' && node.type !== 'tank' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('🗑️ Delete button clicked for assigned canal:', node.name || node.canalName);
+                  onCanalDelete(node);
+                }}
+                className="p-2 hover:bg-red-50 hover:shadow-md rounded-lg transition-all duration-200"
+                title="Delete canal (EA only)"
+              >
+                <Trash2 className="h-4 w-4 text-red-500 hover:text-red-700" />
               </button>
             )}
           </div>

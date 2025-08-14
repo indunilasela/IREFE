@@ -7,7 +7,8 @@ import {
   RefreshCw,
   Settings,
   Database,
-  Activity
+  Activity,
+  Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -287,6 +288,42 @@ const CanalManagement = () => {
     }
   };
 
+  // 🗑️ Delete Canal - EA Only
+  const deleteCanal = async (canalId) => {
+    try {
+      const token = getAuthToken();
+      console.log('🗑️ Deleting canal:', canalId);
+      
+      const response = await fetch(`${API_BASE_URL}/ea/canals/${canalId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Canal deleted successfully! 🗑️');
+        console.log('✅ Canal deleted:', result.message);
+        await fetchCanalHierarchy();
+        await fetchMyAssignedCanals();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete canal');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting canal:', error);
+      toast.error(`Failed to delete canal: ${error.message}`);
+    }
+  };
+
+  const handleCanalDelete = (canal) => {
+    if (window.confirm(`Are you sure you want to delete canal "${canal.name || canal.canalName}"? This action cannot be undone.`)) {
+      deleteCanal(canal.id || canal._id);
+    }
+  };
+
   const handleCanalSelect = (canal) => {
     setSelectedCanal(canal);
     setShowUpdateForm(true);
@@ -458,6 +495,7 @@ const CanalManagement = () => {
         expandedNodes={expandedNodes}
         toggleNode={toggleNode}
         onCanalSelect={handleCanalSelect}
+        onCanalDelete={handleCanalDelete}
         user={user}
         canCreate={canCreate}
         setShowMainCanalForm={setShowMainCanalForm}

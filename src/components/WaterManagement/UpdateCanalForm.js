@@ -34,10 +34,59 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
     setIsLoading(true);
     const canalId = canal.id || canal._id;
     console.log('📝 Submitting canal update:', canalId, formData);
+    
     try {
+      // If user can manage assignments and assignments have changed, update them via separate endpoint
+      if (canManageAssignments && assignmentChanged()) {
+        console.log('👥 Updating canal assignments...');
+        await updateCanalAssignments(canalId, {
+          selectFA: formData.selectFA,
+          selectIrrigator: formData.selectIrrigator
+        });
+      }
+      
+      // Update other canal details
       await onUpdate(canalId, formData);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Check if assignments have changed
+  const assignmentChanged = () => {
+    const currentFA = (canal.assignedFA?.map(fa => typeof fa === 'object' ? fa._id : fa)) || [];
+    const currentIrrigators = (canal.assignedIrrigators?.map(irr => typeof irr === 'object' ? irr._id : irr)) || [];
+    
+    const faChanged = JSON.stringify(currentFA.sort()) !== JSON.stringify(formData.selectFA.sort());
+    const irrigatorChanged = JSON.stringify(currentIrrigators.sort()) !== JSON.stringify(formData.selectIrrigator.sort());
+    
+    return faChanged || irrigatorChanged;
+  };
+
+  // Update canal user assignments via new endpoint
+  const updateCanalAssignments = async (canalId, assignmentData) => {
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ea/canals/${canalId}/users`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(assignmentData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Canal assignments updated:', result);
+        return result;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update canal assignments');
+      }
+    } catch (error) {
+      console.error('❌ Error updating canal assignments:', error);
+      throw error;
     }
   };
 
