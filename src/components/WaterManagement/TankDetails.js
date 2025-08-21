@@ -56,6 +56,13 @@ const TankCard = ({
     navigate(`/tanks/${tank.id}`);
   };
 
+  // Get user role from localStorage (or context if available)
+  let userRole = null;
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    userRole = user?.role;
+  } catch (e) {}
+
   return (
     <div 
       className={`bg-white rounded-lg shadow-lg p-6 ${
@@ -75,7 +82,8 @@ const TankCard = ({
           </div>
         </div>
         <div className="flex space-x-1">
-          {canUpdateAllDetails && !isEditingDetails && !isEditingAvailability && (
+          {/* Edit icon: Only EA */}
+          {canUpdateAllDetails && !isEditingDetails && !isEditingAvailability && userRole === 'EA' && (
             <button
               onClick={() => onEditDetails(tank)}
               className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
@@ -84,7 +92,8 @@ const TankCard = ({
               <Edit className="h-4 w-4" />
             </button>
           )}
-          {canUpdateAvailability && !isEditingDetails && !isEditingAvailability && (
+          {/* Droplets icon: Only DIA, DA, EA */}
+          {canUpdateAvailability && !isEditingDetails && !isEditingAvailability && ['DIA','DA','EA'].includes(userRole) && (
             <button
               onClick={() => onEditAvailability(tank)}
               className="p-2 text-gray-400 hover:text-green-600 transition-colors"
@@ -93,7 +102,8 @@ const TankCard = ({
               <Droplets className="h-4 w-4" />
             </button>
           )}
-          {canDelete && !isEditingDetails && !isEditingAvailability && (
+          {/* Trash2 icon: Only EA */}
+          {canDelete && !isEditingDetails && !isEditingAvailability && userRole === 'EA' && (
             <button
               onClick={() => onDelete(tank.id, tank.name)}
               className="p-2 text-gray-400 hover:text-red-600 transition-colors"
