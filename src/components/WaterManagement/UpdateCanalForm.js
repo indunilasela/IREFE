@@ -299,7 +299,7 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sluice Opening Size (inch) *
+                  Sluice Opening Size (inch) 
                 </label>
                 <input
                   type="number"

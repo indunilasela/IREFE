@@ -211,7 +211,7 @@ const CanalTree = ({
                   </div>
                   <div className="flex items-center text-blue-600">
                     
-                    <span className="font-medium">inch: {node.flowRate }</span>
+                    <span className="font-medium">inch: {node.sluiceOpeningSize != null ? node.sluiceOpeningSize : '0'}</span>
                   </div>
                   
                   <div className="flex items-center text-gray-500">
