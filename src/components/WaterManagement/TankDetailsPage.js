@@ -39,6 +39,7 @@ const TankDetailsPage = () => {
   const canUpdateAvailability = ['DIA', 'DA', 'EA'].includes(user?.role);
   const canUpdateAllDetails = user?.role === 'EA';
   const canDeleteTanks = ['Admin', 'EA'].includes(user?.role);
+  const canAddTanks = user?.role === 'EA';
 
   useEffect(() => {
     fetchTankDetails();

@@ -18,16 +18,7 @@ import {
   Database
 } from 'lucide-react';
 import { TankCard, AddTankModal } from './TankDetails';
-
-// Mock auth context for demonstration
-const useAuth = () => ({
-  user: {
-    firstName: 'John',
-    lastName: 'Doe',
-    role: 'EA', // Change this to test different roles: 'EA', 'DIA', 'DA', 'Admin', 'Farmer', 'FA', 'Irrigator'
-    isFirstLogin: false
-  }
-});
+import { useAuth } from '../../context/AuthContext'; // Adjust the path if needed
 
 const TankManagement = () => {
   const { user } = useAuth();
