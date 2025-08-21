@@ -236,15 +236,6 @@ const TankDetailsPage = () => {
           </div>
         </div>
         
-        {canDeleteTanks && (
-          <button
-            onClick={handleDeleteTank}
-            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Tank
-          </button>
-        )}
       </div>
 
       {/* Tank Information Card */}
@@ -260,7 +251,7 @@ const TankDetailsPage = () => {
           </div>
           
           <div className="flex space-x-2">
-            {canUpdateAllDetails && !editingDetails && !editingAvailability && (
+            {/* {canUpdateAllDetails && !editingDetails && !editingAvailability && (
               <button
                 onClick={() => setEditingDetails(true)}
                 className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors"
@@ -277,7 +268,7 @@ const TankDetailsPage = () => {
                 <Droplets className="h-4 w-4 mr-1" />
                 Update Availability
               </button>
-            )}
+            )} */}
           </div>
         </div>
 
