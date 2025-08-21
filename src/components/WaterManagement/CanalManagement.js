@@ -350,9 +350,9 @@ const CanalManagement = () => {
             <Tree className="h-8 w-8 mr-3 text-green-600" />
             Canal Management System
           </h1>
-          <p className="mt-2 text-gray-600">
+          {/* <p className="mt-2 text-gray-600">
             Hierarchical canal network with real-time flow control and notifications
-          </p>
+          </p> */}
           <div className="flex items-center mt-2 text-sm text-gray-500">
             <Database className="h-4 w-4 mr-1" />
             <span>Click any tank to expand → Click any canal to edit</span>

@@ -189,11 +189,11 @@ const CanalTree = ({
             <div className="flex items-center space-x-3">
               <span className="font-semibold text-gray-900">{node.name}</span>
               
-              {node.code && (
+              {/* {node.code && (
                 <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full font-mono">
                   {node.code}
                 </span>
-              )}
+              )} */}
               
               {node.type !== 'tank' && (
                 <div className="flex items-center space-x-3 text-sm">
@@ -207,7 +207,11 @@ const CanalTree = ({
                   
                   <div className="flex items-center text-blue-600">
                     <Droplets className="h-4 w-4 mr-1" />
-                    <span className="font-medium">{node.flowRate} L/s</span>
+                    <span className="font-medium">cusec: {node.flowRate}</span>
+                  </div>
+                  <div className="flex items-center text-blue-600">
+                    
+                    <span className="font-medium">inch: {node.flowRate }</span>
                   </div>
                   
                   <div className="flex items-center text-gray-500">
@@ -223,13 +227,13 @@ const CanalTree = ({
                     <MapPin className="h-4 w-4 mr-1" />
                     <span>{node.location}</span>
                   </div>
-                  <div className="flex items-center text-blue-600">
+                  {/* <div className="flex items-center text-blue-600">
                     <Droplets className="h-4 w-4 mr-1" />
                     <span className="font-medium">{node.currentWaterLevel}%</span>
-                  </div>
-                  <div className="text-gray-500">
+                  </div> */}
+                  {/* <div className="text-gray-500">
                     <span>Cap: {(node.capacity / 1000).toFixed(0)}K L</span>
-                  </div>
+                  </div> */}
                 </div>
               )}
             </div>
@@ -356,7 +360,10 @@ const CanalTree = ({
                   
                   <div className="flex items-center text-blue-600">
                     <Droplets className="h-4 w-4 mr-1" />
-                    <span className="font-medium">{node.flowRate || 0} L/s</span>
+                    <span className="font-medium">cusec: {node.flowRate || 0}</span>
+                  </div>
+                  <div className="flex items-center text-blue-600">
+                    <span className="font-medium">cusec: {node.flowRate || 0}</span>
                   </div>
                   
                   <div className="flex items-center text-gray-500">
@@ -377,13 +384,13 @@ const CanalTree = ({
                     <MapPin className="h-4 w-4 mr-1" />
                     <span>{node.location || 'Unknown location'}</span>
                   </div>
-                  <div className="flex items-center text-blue-600">
+                  {/* <div className="flex items-center text-blue-600">
                     <Droplets className="h-4 w-4 mr-1" />
                     <span className="font-medium">{node.currentWaterLevel || 0}%</span>
-                  </div>
-                  <div className="text-gray-500">
+                  </div> */}
+                  {/* <div className="text-gray-500">
                     <span>Cap: {((node.capacity || 0) / 1000).toFixed(0)}K L</span>
-                  </div>
+                  </div> */}
                 </div>
               )}
             </div>
