@@ -1,4 +1,29 @@
-# Getting Started with Create React App
+# Water Management System
+
+A comprehensive water management system for irrigation and resource management with a fully responsive interface.
+
+## 🎯 New Features
+
+### Fully Responsive Layout
+- ✅ **Mobile-first design** - Optimized for all screen sizes
+- ✅ **Sliding sidebar navigation** - Smooth animations and transitions
+- ✅ **Arrow key navigation** - Use `Ctrl` + `←/→` to toggle sidebar
+- ✅ **Touch-friendly mobile interface** - Swipe and tap gestures
+- ✅ **Automatic screen adaptation** - Desktop, tablet, and mobile support
+
+### Keyboard Shortcuts
+- `Ctrl` + `←` - Hide sidebar
+- `Ctrl` + `→` - Show sidebar
+
+### Demo Page
+Visit `/demo/responsive` to see all responsive features in action!
+
+📖 **Full Documentation:** See [RESPONSIVE_LAYOUT.md](./RESPONSIVE_LAYOUT.md) for complete details  
+⚡ **Quick Reference:** See [RESPONSIVE_QUICK_REFERENCE.md](./RESPONSIVE_QUICK_REFERENCE.md)
+
+---
+
+## Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 

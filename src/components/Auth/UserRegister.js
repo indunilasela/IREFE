@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const USER_ROLES = {
@@ -46,6 +47,7 @@ const schema = yup.object({
 
 const Register = () => {
   const { register: registerUser } = useAuth();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -222,6 +224,20 @@ const Register = () => {
             >
               Clear
             </button>
+          </div>
+
+          {/* Sign In Link */}
+          <div className="text-center pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="text-blue-600 hover:text-blue-700 font-medium hover:underline focus:outline-none"
+              >
+                Sign In
+              </button>
+            </p>
           </div>
         </form>
       </div>

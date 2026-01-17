@@ -11,6 +11,7 @@ import ChangePassword from './components/Auth/ChangePassword';
 import AdminRegister from './components/Auth/AdminRegister';
 import DirectAdminRegister from './components/Auth/DirectAdminRegister';
 import AdminRegistrationSuccess from './components/Auth/AdminRegistrationSuccess';
+import PublicRegister from './components/Auth/PublicRegister';
 import PendingApprovals from './components/Admin/PendingApprovals';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import UserRegistration from './components/Admin/UserRegistration';
@@ -24,6 +25,7 @@ import PaddyFieldManagement from './components/WaterManagement/PaddyFieldManagem
 import ScheduleManagement from './components/WaterManagement/ScheduleManagement';
 import NotificationCenter from './components/WaterManagement/NotificationCenter';
 import Profile from './components/Common/Profile';
+import ResponsiveDemo from './components/Test/ResponsiveDemo';
 import './styles/globals.css';
 
 // Dashboard Router Component
@@ -80,7 +82,7 @@ function App() {
            <Route path="/login" element={<Login />} />
            <Route path="/forgot-password" element={<ForgotPassword />} />
            <Route path="/reset-password" element={<ResetPassword />} />
-           <Route path="/register" element={<UserRegistration />} />
+           <Route path="/register" element={<PublicRegister />} />
            <Route path="/admin-register" element={<DirectAdminRegister />} />
            <Route path="/admin-registration-success" element={<AdminRegistrationSuccess />} />
            
@@ -165,6 +167,15 @@ function App() {
              <ProtectedRoute>
                <Layout>
                  <NotificationCenter />
+               </Layout>
+             </ProtectedRoute>
+           } />
+           
+           {/* Demo Route - Responsive Layout */}
+           <Route path="/demo/responsive" element={
+             <ProtectedRoute>
+               <Layout>
+                 <ResponsiveDemo />
                </Layout>
              </ProtectedRoute>
            } />

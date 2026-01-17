@@ -4,6 +4,8 @@
 
 /* Import component styles */
 @import './components/auth.css';
+@import './components/layout.css';
+@import './components/demo.css';
 
 /* Custom styles */
 body {
@@ -92,4 +94,49 @@ body {
 
 .auth-subtitle {
   @apply text-sm text-gray-600;
+}
+
+/* Responsive layout utilities */
+.sidebar-transition {
+  transition: transform 0.3s ease-in-out, margin 0.3s ease-in-out;
+}
+
+/* Keyboard hint badge */
+kbd {
+  @apply inline-block px-2 py-1 text-xs font-semibold bg-gray-700 text-white rounded;
+}
+
+/* Mobile-friendly table */
+@media (max-width: 768px) {
+  .responsive-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent content shift on modal open */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Mobile navigation overlay */
+.mobile-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300;
+}
+
+/* Arrow button animation */
+.arrow-button {
+  @apply transform transition-all duration-300 ease-in-out hover:scale-110;
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  @apply outline-2 outline-blue-500 outline-offset-2;
 }
