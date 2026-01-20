@@ -43,7 +43,7 @@ const PaddyFieldManagement = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
   // API Base URL
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'https://irebe.onrender.com/api';
 
   // User permissions
   const canCreateFields = ['EA'].includes(user?.role);

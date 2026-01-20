@@ -243,7 +243,7 @@ const UserDashboard = () => {
           scheme: reservoirDetails.scheme
         });
 
-        const tanksResponse = await fetch(`http://localhost:5000/api/user/reservoir-data?${queryParams}`, {
+        const tanksResponse = await fetch(`https://irebe.onrender.com/api/user/reservoir-data?${queryParams}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

@@ -1,5 +1,5 @@
 // Public API Service for PublicUser role
-const API_BASE_URL = 'http://localhost:5000/api/public';
+const API_BASE_URL = 'https://irebe.onrender.com/api/public';
 
 class PublicApiService {
   

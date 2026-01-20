@@ -416,8 +416,8 @@ const fetchCanalStats = async () => {
 ADD TO YOUR .env FILE:
 
 # API Configuration
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_SOCKET_URL=http://localhost:5000
+REACT_APP_API_URL=https://irebe.onrender.com/api
+REACT_APP_SOCKET_URL=https://irebe.onrender.com
 
 # Canal Management Features
 REACT_APP_CANAL_HIERARCHY_ENABLED=true

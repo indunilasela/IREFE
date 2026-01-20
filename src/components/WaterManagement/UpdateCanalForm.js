@@ -77,7 +77,7 @@ const UpdateCanalForm = ({ canal, onClose, onUpdate, availableFA, availableIrrig
   const updateCanalAssignments = async (canalId, assignmentData) => {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/ea/canals/${canalId}/users`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/canals/${canalId}/users`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

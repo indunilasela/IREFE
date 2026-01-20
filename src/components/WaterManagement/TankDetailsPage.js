@@ -47,7 +47,7 @@ const TankDetailsPage = () => {
 
   const fetchTankDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/tanks/${tankId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ const TankDetailsPage = () => {
 
   const handleUpdateAvailability = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}/availability`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/tanks/${tankId}/availability`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ const TankDetailsPage = () => {
 
   const handleUpdateTankDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/tanks/${tankId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ const TankDetailsPage = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/tanks/${tankId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

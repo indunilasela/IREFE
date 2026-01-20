@@ -150,7 +150,7 @@ const Dashboard = () => {
   // Fetch tanks from API
   const fetchTanks = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/ea/tanks', {
+      const response = await fetch('https://irebe.onrender.com/api/ea/tanks', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

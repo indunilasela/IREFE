@@ -3,8 +3,8 @@ import io from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'https://irebe.onrender.com';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://irebe.onrender.com/api';
 
 export const useNotifications = () => {
   const { user } = useAuth();

@@ -1,8 +1,8 @@
 /*
  * Tank Management Component
  * 
- * Backend API Integration: Connected to backend server running on port 5000
- * API Base URL: http://localhost:5000/api
+ * Backend API Integration: Connected to backend server
+ * API Base URL: https://irebe.onrender.com/api
  * Tank Endpoints: 
  * - GET /api/ea/tanks (fetch all tanks)
  * - POST /api/ea/tanks (create new tank)
@@ -41,7 +41,7 @@ const TankManagement = () => {
 
   const fetchTanks = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/ea/tanks', {
+      const response = await fetch('https://irebe.onrender.com/api/ea/tanks', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ const TankManagement = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}/availability`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/tanks/${tankId}/availability`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ const TankManagement = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/tanks/${tankId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ const TankManagement = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/ea/tanks', {
+      const response = await fetch('https://irebe.onrender.com/api/ea/tanks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -267,7 +267,7 @@ const TankManagement = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/ea/tanks/${tankId}`, {
+      const response = await fetch(`https://irebe.onrender.com/api/ea/tanks/${tankId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

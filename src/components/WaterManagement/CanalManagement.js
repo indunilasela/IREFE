@@ -18,7 +18,7 @@ import MainCanalForm from './MainCanalForm';
 import SubCanalForm from './SubCanalForm';
 import UpdateCanalForm from './UpdateCanalForm';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://irebe.onrender.com/api';
 
 const CanalManagement = () => {
   const { user } = useAuth();

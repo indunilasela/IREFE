@@ -36,7 +36,7 @@ const WaterManagement = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
   // API Base URL
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'https://irebe.onrender.com/api';
 
   // Determine if user can edit data
   const canEdit = ['DIA', 'DA', 'EA', 'FA', 'Irrigator'].includes(user?.role);
